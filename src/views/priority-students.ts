@@ -1,4 +1,4 @@
-﻿import { User, PriorityStudent, Student, MasterClass } from '../types';
+import { User, PriorityStudent, Student, MasterClass } from '../types';
 import { DEFAULT_AVATAR, formatWIT, formatWITDate } from './helpers';
 import { renderLayout } from './layout';
 
@@ -557,7 +557,13 @@ export function renderPriorityStudentsPage(
 
       // 1. Complete Priority Student (Centang ✓ dengan Verifikasi Database Server-Side)
       async function completePriorityStudent(priorityId, studentName) {
-        if (!confirm("Proses verifikasi data di database untuk siswa " + studentName + "? Sistem akan mengecek ketersediaan seluruh berkas di database sebelum meloloskan siswa.")) {
+        const confirmed = await window.showConfirmModal({
+          title: 'Verifikasi & Selesaikan Siswa',
+          message: 'Proses verifikasi data di database untuk siswa <b>' + studentName + '</b>? Sistem akan mengecek ketersediaan seluruh berkas di database sebelum meloloskan siswa.',
+          type: 'info',
+          confirmText: 'Ya, Verifikasi'
+        });
+        if (!confirmed) {
           return;
         }
 
@@ -591,25 +597,30 @@ export function renderPriorityStudentsPage(
             }
 
             // Show Floating Toast & Alert
-            showToast('success', 'Data siswa berhasil diverifikasi dan siswa dinyatakan selesai.');
+            showToast('Data siswa berhasil diverifikasi dan siswa dinyatakan selesai.', 'success');
           } else {
             // VERIFICATION FAILED: Display missing items list to Teacher
             let errMsg = data.message || 'Siswa belum dapat diselesaikan.';
             if (data.missing_items && Array.isArray(data.missing_items) && data.missing_items.length > 0) {
               errMsg += ' | Rincian berkas yang belum tersimpan: ' + data.missing_items.join(', ');
             }
-            alert('⚠️ VERIFIKASI DATABASE GAGAL! ' + errMsg + ' Silakan lengkapi/unggah berkas tersebut terlebih dahulu.');
-            showToast('danger', data.message || 'Siswa belum dapat diselesaikan.');
+            showToast('VERIFIKASI DATABASE GAGAL! ' + errMsg, 'danger', 4000);
           }
         } catch (err) {
           console.error(err);
-          alert('Terjadi kesalahan jaringan.');
+          showToast('Terjadi kesalahan jaringan.', 'danger', 3000);
         }
       }
 
       // 2. Admin Delete Priority Student
       async function deletePriorityStudent(priorityId, studentName) {
-        if (!confirm("Hapus " + studentName + " dari daftar prioritas?")) return;
+        const confirmed = await window.showConfirmModal({
+          title: 'Hapus Dari Prioritas',
+          message: 'Apakah Anda yakin ingin menghapus <b>' + studentName + '</b> dari daftar prioritas?',
+          type: 'danger',
+          confirmText: 'Ya, Hapus'
+        });
+        if (!confirmed) return;
         try {
           const res = await fetch('/api/priority-students/delete/' + priorityId, { method: 'POST' });
           const data = await res.json();

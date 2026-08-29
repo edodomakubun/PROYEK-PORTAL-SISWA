@@ -1,6 +1,6 @@
 import { Student, Role, StudentClassHistory, StudentDocument, User } from '../types';
 
-import { DEFAULT_AVATAR, formatWIT, formatWITDate } from './helpers';
+import { DEFAULT_AVATAR, formatWIT, formatWITDate, formatIsoDate } from './helpers';
 
 import { renderLayout } from './layout';
 
@@ -1240,7 +1240,7 @@ export function renderStudentDetailPage(
 
               <label class="form-label small fw-semibold text-secondary">Tanggal Lahir</label>
 
-              <input type="date" name="birth_date" class="form-control rounded-3" value="${student.birth_date || ''}" ${userRole === 'siswa' ? 'readonly' : ''} />
+              <input type="date" name="birth_date" class="form-control rounded-3" value="${formatIsoDate(student.birth_date)}" ${userRole === 'siswa' ? 'readonly' : ''} />
 
             </div>
 
@@ -1942,184 +1942,77 @@ export function renderStudentDetailPage(
 
 
 
-              resultBox.innerHTML = \`
-
-                <div class="card border-\${isMatch === false ? 'warning' : 'success'} border-opacity-50 rounded-4 shadow-sm overflow-hidden mb-0">
-
-                  <div class="card-header bg-\${isMatch === false ? 'warning bg-opacity-10' : 'success bg-opacity-10'} py-3 px-3 border-0 d-flex align-items-center justify-content-between flex-wrap gap-2">
-
-                    <div class="d-flex align-items-center gap-2">
-
-                      <i class="bi bi-check-circle-fill text-\${isMatch === false ? 'warning' : 'success'} fs-4"></i>
-
-                      <div>
-
-                        <h6 class="fw-bold mb-0 text-dark">Struktur NIK Valid (16 Digit Terverifikasi)</h6>
-
-                        <span class="small text-muted">Hasil Penguraian Algoritma Kependudukan RI</span>
-
-                      </div>
-
-                    </div>
-
-                    \${matchBadge}
-
-                  </div>
-
-                  <div class="card-body p-3">
-
-                    <div class="row g-2 mb-3">
-
-                      <div class="col-12 col-sm-6">
-
-                        <div class="bg-light p-2.5 rounded-3">
-
-                          <span class="text-muted d-block small">Provinsi Asal:</span>
-
-                          <strong class="text-dark fs-6"><i class="bi bi-geo-alt-fill text-danger me-1"></i>\${d.provinceName || '-'}</strong>
-
-                          <div class="small text-muted">Kode Wilayah: <code>\${d.provinceCode || '-'}</code></div>
-
-                        </div>
-
-                      </div>
-
-                      <div class="col-12 col-sm-6">
-
-                        <div class="bg-light p-2.5 rounded-3">
-
-                          <span class="text-muted d-block small">Jenis Kelamin dari NIK:</span>
-
-                          <strong class="text-dark fs-6">
-
-                            <i class="bi \${d.gender === 'Laki-laki' ? 'bi-gender-male text-primary' : 'bi-gender-female text-danger'} me-1"></i>
-
-                            \${d.gender || '-'}
-
-                          </strong>
-
-                          <div class="small text-muted">Kode Tanggal NIK: <code>\${d.birthDateRaw || '-'}</code></div>
-
-                        </div>
-
-                      </div>
-
-                      <div class="col-12 col-sm-6">
-
-                        <div class="bg-light p-2.5 rounded-3">
-
-                          <span class="text-muted d-block small">Tanggal Lahir (dari NIK):</span>
-
-                          <strong class="text-primary fs-6"><i class="bi bi-calendar-event text-primary me-1"></i>\${d.birthDateDisplay || '-'}</strong>
-
-                          <div class="small text-muted">Format ISO: <code>\${d.birthDateFormatted || '-'}</code></div>
-
-                        </div>
-
-                      </div>
-
-                      <div class="col-12 col-sm-6">
-
-                        <div class="bg-light p-2.5 rounded-3">
-
-                          <span class="text-muted d-block small">Tanggal Lahir (Tersimpan di DB):</span>
-
-                          <strong class="text-dark fs-6"><i class="bi bi-database text-secondary me-1"></i>\${dobValue || '<span class=\"text-danger\">Kosong</span>'}</strong>
-
-                          <div class="small text-muted">Status: \${isMatch === true ? '<span class=\"text-success fw-bold\">Sesuai</span>' : '<span class=\"text-danger fw-bold\">Perlu Penyesuaian</span>'}</div>
-
-                        </div>
-
-                      </div>
-
-                    </div>
-
-
-
-                    \${d.discrepancyMessage ? \`
-
-                      <div class="alert alert-warning border-0 rounded-3 p-2.5 small mb-2">
-
-                        <i class="bi bi-exclamation-triangle-fill me-1"></i> \${d.discrepancyMessage}
-
-                      </div>
-
-                    \` : ''}
-
-
-
-                    <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 pt-2 border-top">
-
-                      <span class="small text-muted">No. Urut Kependudukan: <code>\${d.sequenceNumber || '-'}</code></span>
-
-                      \${(isMatch === false && d.birthDateFormatted) ? \`
-
-                        <button type="button" class="btn btn-sm btn-outline-primary rounded-pill px-3 fw-bold" onclick="document.querySelector('input[name=birth_date]').value='\${d.birthDateFormatted}'; alert('Tanggal lahir di form diperbarui menjadi ' + '\${d.birthDateFormatted}' + '. Silakan klik tombol Simpan Perubahan di halaman profil.');">
-
-                          <i class="bi bi-magic me-1"></i> Terapkan Tgl Lahir NIK ke Form
-
-                        </button>
-
-                      \` : ''}
-
-                    </div>
-
-                  </div>
-
-                </div>
-
-              \`;
-
+              let discHTML = d.discrepancyMessage ? ('<div class="alert alert-warning border-0 rounded-3 p-2.5 small mb-2"><i class="bi bi-exclamation-triangle-fill me-1"></i> ' + d.discrepancyMessage + '</div>') : '';
+              let fixBtnHTML = (isMatch === false && d.birthDateFormatted) ? ('<button type="button" class="btn btn-sm btn-outline-primary rounded-pill px-3 fw-bold" onclick="document.querySelector(\'input[name=birth_date]\').value=\'' + d.birthDateFormatted + '\'; showToast(\'Tanggal lahir di form diperbarui menjadi ' + d.birthDateFormatted + '. Silakan klik tombol Simpan Perubahan.\', \'info\', 3000);"><i class="bi bi-magic me-1"></i> Terapkan Tgl Lahir NIK ke Form</button>') : '';
+
+              resultBox.innerHTML = '<div class="card border-' + (isMatch === false ? 'warning' : 'success') + ' border-opacity-50 rounded-4 shadow-sm overflow-hidden mb-0">' +
+                  '<div class="card-header bg-' + (isMatch === false ? 'warning bg-opacity-10' : 'success bg-opacity-10') + ' py-3 px-3 border-0 d-flex align-items-center justify-content-between flex-wrap gap-2">' +
+                    '<div class="d-flex align-items-center gap-2">' +
+                      '<i class="bi bi-check-circle-fill text-' + (isMatch === false ? 'warning' : 'success') + ' fs-4"></i>' +
+                      '<div>' +
+                        '<h6 class="fw-bold mb-0 text-dark">Struktur NIK Valid (16 Digit Terverifikasi)</h6>' +
+                        '<span class="small text-muted">Hasil Penguraian Algoritma Kependudukan RI</span>' +
+                      '</div>' +
+                    '</div>' + matchBadge +
+                  '</div>' +
+                  '<div class="card-body p-3">' +
+                    '<div class="row g-2 mb-3">' +
+                      '<div class="col-12 col-sm-6">' +
+                        '<div class="bg-light p-2.5 rounded-3">' +
+                          '<span class="text-muted d-block small">Provinsi Asal:</span>' +
+                          '<strong class="text-dark fs-6"><i class="bi bi-geo-alt-fill text-danger me-1"></i>' + (d.provinceName || '-') + '</strong>' +
+                          '<div class="small text-muted">Kode Wilayah: <code>' + (d.provinceCode || '-') + '</code></div>' +
+                        '</div>' +
+                      '</div>' +
+                      '<div class="col-12 col-sm-6">' +
+                        '<div class="bg-light p-2.5 rounded-3">' +
+                          '<span class="text-muted d-block small">Jenis Kelamin dari NIK:</span>' +
+                          '<strong class="text-dark fs-6">' +
+                            '<i class="bi ' + (d.gender === 'Laki-laki' ? 'bi-gender-male text-primary' : 'bi-gender-female text-danger') + ' me-1"></i>' +
+                            (d.gender || '-') +
+                          'strong>' +
+                          '<div class="small text-muted">Kode Tanggal NIK: <code>' + (d.birthDateRaw || '-') + '</code></div>' +
+                        '</div>' +
+                      '</div>' +
+                      '<div class="col-12 col-sm-6">' +
+                        '<div class="bg-light p-2.5 rounded-3">' +
+                          '<span class="text-muted d-block small">Tanggal Lahir (dari NIK):</span>' +
+                          '<strong class="text-primary fs-6"><i class="bi bi-calendar-event text-primary me-1"></i>' + (d.birthDateDisplay || '-') + '</strong>' +
+                          '<div class="small text-muted">Format ISO: <code>' + (d.birthDateFormatted || '-') + '</code></div>' +
+                        '</div>' +
+                      '</div>' +
+                      '<div class="col-12 col-sm-6">' +
+                        '<div class="bg-light p-2.5 rounded-3">' +
+                          '<span class="text-muted d-block small">Tanggal Lahir (Tersimpan di DB):</span>' +
+                          '<strong class="text-dark fs-6"><i class="bi bi-database text-secondary me-1"></i>' + (dobValue || '<span class="text-danger">Kosong</span>') + '</strong>' +
+                          '<div class="small text-muted">Status: ' + (isMatch === true ? '<span class="text-success fw-bold">Sesuai</span>' : '<span class="text-danger fw-bold">Perlu Penyesuaian</span>') + '</div>' +
+                        '</div>' +
+                      '</div>' +
+                    '</div>' + discHTML +
+                    '<div class="d-flex align-items-center justify-content-between flex-wrap gap-2 pt-2 border-top">' +
+                      '<span class="small text-muted">No. Urut Kependudukan: <code>' + (d.sequenceNumber || '-') + '</code></span>' + fixBtnHTML +
+                    '</div>' +
+                  '</div>' +
+                '</div>';
             } else {
-
               const errorMsg = (d && d.errors && d.errors.length > 0) ? d.errors.join('<br>') : (res.message || 'Struktur NIK tidak valid');
-
-              resultBox.innerHTML = \`
-
-                <div class="alert alert-danger border-danger border-opacity-25 rounded-4 p-3 shadow-sm">
-
-                  <div class="d-flex align-items-start gap-2">
-
-                    <i class="bi bi-x-circle-fill text-danger fs-4"></i>
-
-                    <div>
-
-                      <h6 class="fw-bold text-danger mb-1">Struktur NIK Tidak Valid</h6>
-
-                      <div class="small text-dark mb-0">\${errorMsg}</div>
-
-                    </div>
-
-                  </div>
-
-                </div>
-
-              \`;
-
+              resultBox.innerHTML = '<div class="alert alert-danger border-danger border-opacity-25 rounded-4 p-3 shadow-sm">' +
+                  '<div class="d-flex align-items-start gap-2">' +
+                    '<i class="bi bi-x-circle-fill text-danger fs-4"></i>' +
+                    '<div>' +
+                      '<h6 class="fw-bold text-danger mb-1">Struktur NIK Tidak Valid</h6>' +
+                      '<div class="small text-dark mb-0">' + errorMsg + '</div>' +
+                    '</div>' +
+                  '</div>' +
+                '</div>';
             }
-
           } catch (err) {
-
             if (loadingDiv) loadingDiv.classList.add('d-none');
-
             btnExecute.disabled = false;
-
             if (resultBox) {
-
               resultBox.classList.remove('d-none');
-
-              resultBox.innerHTML = \`
-
-                <div class="alert alert-danger rounded-4 p-3">
-
-                  <i class="bi bi-exclamation-triangle-fill me-1"></i> Gagal menghubungi server lokal.
-
-                </div>
-
-              \`;
-
+              resultBox.innerHTML = '<div class="alert alert-danger rounded-4 p-3"><i class="bi bi-exclamation-triangle-fill me-1"></i> Gagal menghubungi server lokal.</div>';
             }
-
           }
 
         });

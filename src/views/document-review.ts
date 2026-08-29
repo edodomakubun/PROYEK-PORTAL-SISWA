@@ -1,4 +1,4 @@
-﻿import { User } from '../types';
+import { User } from '../types';
 import { renderLayout } from './layout';
 
 export function renderDocumentReviewPage(user: User, pendingDocs: any[]): string {
@@ -418,78 +418,72 @@ export function renderDocumentReviewPage(user: User, pendingDocs: any[]): string
 
           if (action === 'mass-approve') {
             e.preventDefault();
-            if (window.AppModal) {
-              window.AppModal.confirm({
-                title: 'Konfirmasi Mass Approve',
-                message: 'Anda yakin ingin meng-approve semua dokumen pending dari semua siswa?',
-                confirmText: 'Ya, Approve Semua',
-                type: 'success'
-              }).then(function(confirmed) {
-                if (confirmed) document.getElementById('massApproveForm').submit();
-              });
-            }
+            window.showConfirmModal({
+              title: 'Konfirmasi Mass Approve',
+              message: 'Anda yakin ingin meng-approve semua dokumen pending dari semua siswa?',
+              type: 'success',
+              confirmText: 'Ya, Approve Semua'
+            }).then(function(confirmed) {
+              if (confirmed) document.getElementById('massApproveForm').submit();
+            });
           } 
           else if (action === 'approve-student') {
             e.preventDefault();
             const studentId = btn.getAttribute('data-id');
-            if (window.AppModal) {
-              window.AppModal.confirm({
-                title: 'Konfirmasi Persetujuan',
-                message: 'Approve semua dokumen siswa ini?',
-                confirmText: 'Ya, Approve',
-                type: 'success'
-              }).then(function(confirmed) {
-                if (confirmed) document.getElementById('approve-student-' + studentId).submit();
-              });
-            }
+            window.showConfirmModal({
+              title: 'Konfirmasi Persetujuan',
+              message: 'Approve semua dokumen siswa ini?',
+              type: 'success',
+              confirmText: 'Ya, Approve'
+            }).then(function(confirmed) {
+              if (confirmed) document.getElementById('approve-student-' + studentId).submit();
+            });
           }
           else if (action === 'reject-student') {
             e.preventDefault();
             const studentId = btn.getAttribute('data-id');
             const studentName = decodeURIComponent(btn.getAttribute('data-name') || '');
-            if (window.AppModal) {
-              window.AppModal.prompt({
-                title: 'Alasan Penolakan Dokumen',
-                message: 'Masukkan alasan penolakan dokumen untuk siswa <b>' + studentName + '</b> (berlaku untuk semua dokumen pending siswa ini):',
-                required: true,
-                confirmText: 'Tolak Berkas'
-              }).then(function(note) {
-                if (note) {
-                  document.getElementById('reject-note-' + studentId).value = note;
-                  document.getElementById('reject-form-' + studentId).submit();
-                }
-              });
-            }
+            window.showPromptModal({
+              title: 'Alasan Penolakan Dokumen',
+              message: 'Masukkan alasan penolakan dokumen untuk siswa <b>' + studentName + '</b> (berlaku untuk semua dokumen pending siswa ini):',
+              placeholder: 'Tuliskan alasan penolakan...',
+              confirmText: 'Tolak Berkas',
+              btnClass: 'btn-danger',
+              required: true
+            }).then(function(note) {
+              if (note) {
+                document.getElementById('reject-note-' + studentId).value = note;
+                document.getElementById('reject-form-' + studentId).submit();
+              }
+            });
           }
           else if (action === 'approve-specific') {
             e.preventDefault();
-            if (window.AppModal) {
-              window.AppModal.confirm({
-                title: 'Konfirmasi Persetujuan',
-                message: 'Approve dokumen spesifik ini?',
-                confirmText: 'Ya, Approve',
-                type: 'success'
-              }).then(function(confirmed) {
-                if (confirmed) document.getElementById('docApproveForm').submit();
-              });
-            }
+            window.showConfirmModal({
+              title: 'Konfirmasi Persetujuan',
+              message: 'Approve dokumen spesifik ini?',
+              type: 'success',
+              confirmText: 'Ya, Approve'
+            }).then(function(confirmed) {
+              if (confirmed) document.getElementById('docApproveForm').submit();
+            });
           }
           else if (action === 'reject-specific') {
             e.preventDefault();
             if (!currentDocId) return;
-            if (window.AppModal) {
-              window.AppModal.prompt({
-                title: 'Alasan Penolakan Dokumen',
-                message: 'Masukkan alasan penolakan untuk dokumen spesifik ini:',
-                required: true,
-                confirmText: 'Tolak Berkas'
-              }).then(function(note) {
-                if (note) {
-                  document.getElementById('docRejectionNote').value = note;
-                  document.getElementById('docRejectForm').submit();
-                }
-              });
-            }
+            window.showPromptModal({
+              title: 'Alasan Penolakan Dokumen',
+              message: 'Masukkan alasan penolakan untuk dokumen spesifik ini:',
+              placeholder: 'Tuliskan alasan penolakan...',
+              confirmText: 'Tolak Berkas',
+              btnClass: 'btn-danger',
+              required: true
+            }).then(function(note) {
+              if (note) {
+                document.getElementById('docRejectionNote').value = note;
+                document.getElementById('docRejectForm').submit();
+              }
+            });
           }
           else if (action === 'view-doc') {
             e.preventDefault();

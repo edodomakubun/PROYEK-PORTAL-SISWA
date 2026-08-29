@@ -4123,9 +4123,9 @@ app.get('/api/document-reviews/stats', async (c) => {
   const db = c.env.DB;
 
   if (user.role === 'admin') {
-    // Admin needs count of pending documents
+    // Admin needs count of pending students (counted per-student, not per-document)
     const pending = await db.prepare(`
-      SELECT COUNT(sd.id) as count 
+      SELECT COUNT(DISTINCT sd.student_id) as count 
       FROM student_documents sd
       JOIN students s ON sd.student_id = s.id
       WHERE sd.status = 'pending'
@@ -4136,7 +4136,7 @@ app.get('/api/document-reviews/stats', async (c) => {
       pending_count: pending ? pending.count : 0
     });
   } else {
-    // Guru needs approved and rejected documents count in their homeroom class
+    // Guru needs approved and rejected students count in their homeroom class (counted per-student)
     const homeroomClass = user.homeroom_class;
     if (!homeroomClass) {
       return c.json({
@@ -4150,9 +4150,9 @@ app.get('/api/document-reviews/stats', async (c) => {
 
     const stats = await db.prepare(`
       SELECT 
-        SUM(CASE WHEN sd.status = 'approved' THEN 1 ELSE 0 END) as approved_count,
-        SUM(CASE WHEN sd.status = 'rejected' THEN 1 ELSE 0 END) as rejected_count,
-        SUM(CASE WHEN sd.status = 'pending' THEN 1 ELSE 0 END) as pending_count
+        COUNT(DISTINCT CASE WHEN sd.status = 'approved' THEN s.id END) as approved_count,
+        COUNT(DISTINCT CASE WHEN sd.status = 'rejected' THEN s.id END) as rejected_count,
+        COUNT(DISTINCT CASE WHEN sd.status = 'pending' THEN s.id END) as pending_count
       FROM student_documents sd
       JOIN students s ON sd.student_id = s.id
       WHERE s.class_name = ?

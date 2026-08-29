@@ -212,7 +212,7 @@ export function renderPromotionPage(
     <!-- CLIENT SCRIPT UNTUK MANAJEMEN KENAIKAN KELAS -->
     <script>
       const FROM_CLASS_ID = ${fromClass.id};
-      const FROM_CLASS_NAME = "${fromClass.name}";
+      const FROM_CLASS_NAME = ${JSON.stringify(fromClass.name)};
 
       document.addEventListener('DOMContentLoaded', function() {
         const modalEl = document.getElementById('confirmPromotionModal');

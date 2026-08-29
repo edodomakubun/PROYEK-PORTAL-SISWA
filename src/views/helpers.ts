@@ -78,3 +78,32 @@ export function formatIndonesianDate(dateStr: string | null | undefined): string
 
   return str;
 }
+
+/**
+ * Format tanggal ke ISO format "YYYY-MM-DD" yang dipersyaratkan oleh HTML5 <input type="date">
+ * Mengonversi "DD-MM-YYYY" (mis. "18-06-2017") menjadi "2017-06-18"
+ */
+export function formatIsoDate(dateStr: string | null | undefined): string {
+  if (!dateStr || !dateStr.trim()) return '';
+  const str = dateStr.trim();
+  
+  // Format DD-MM-YYYY or DD/MM/YYYY (e.g. "18-06-2017") -> "2017-06-18"
+  const ddmmyyyy = str.match(/^(\d{1,2})[-/](\d{1,2})[-/](\d{4})$/);
+  if (ddmmyyyy) {
+    const day = ddmmyyyy[1].padStart(2, '0');
+    const month = ddmmyyyy[2].padStart(2, '0');
+    const year = ddmmyyyy[3];
+    return `${year}-${month}-${day}`;
+  }
+
+  // Already YYYY-MM-DD
+  const yyyymmdd = str.match(/^(\d{4})[-/](\d{1,2})[-/](\d{1,2})$/);
+  if (yyyymmdd) {
+    const year = yyyymmdd[1];
+    const month = yyyymmdd[2].padStart(2, '0');
+    const day = yyyymmdd[3].padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  }
+
+  return str;
+}

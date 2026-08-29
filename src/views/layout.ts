@@ -1,6 +1,5 @@
-﻿import { User } from '../types';
+import { User } from '../types';
 import { DEFAULT_AVATAR } from './helpers';
-import { renderGlobalModalCSS, renderGlobalModalHTML, renderGlobalModalJS } from './components/globalModal';
 
 export function renderLayout(title: string, user: User, content: string, activeNav: string = 'dashboard'): string {
   const isGuru = user.role === 'guru';
@@ -65,7 +64,6 @@ export function renderLayout(title: string, user: User, content: string, activeN
     
     <!-- Custom Modern UI Styling Enhancements -->
     <style>
-      ${renderGlobalModalCSS()}
 
       :root, [data-bs-theme="light"], html, body {
         color-scheme: light !important;
@@ -1154,6 +1152,236 @@ export function renderLayout(title: string, user: User, content: string, activeN
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.min.js" crossorigin="anonymous"></script>
     <script src="/js/adminlte.js"></script>
 
+    <!-- Custom Bootstrap Confirmation Modal -->
+    <div class="modal fade" id="appConfirmModal" tabindex="-1" aria-hidden="true" style="z-index: 1065;">
+      <div class="modal-dialog modal-dialog-centered" style="max-width: 440px;">
+        <div class="modal-content rounded-4 border-0 shadow-lg">
+          <div class="modal-header border-bottom-0 pb-0 pt-4 px-4">
+            <h5 class="modal-title fw-bold d-flex align-items-center gap-2" id="appConfirmModalTitle">
+              <i class="bi bi-question-circle-fill text-warning fs-3" id="appConfirmModalIcon"></i>
+              <span id="appConfirmModalTitleText">Konfirmasi</span>
+            </h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body py-3 px-4 text-secondary fs-6" id="appConfirmModalMessage">
+            Apakah Anda yakin ingin melanjutkan?
+          </div>
+          <div class="modal-footer border-top-0 pt-0 pb-4 px-4">
+            <button type="button" class="btn btn-light border rounded-pill px-4 fw-semibold text-secondary" data-bs-dismiss="modal">Batal</button>
+            <button type="button" id="appConfirmModalOkBtn" class="btn btn-warning text-dark rounded-pill px-4 fw-bold shadow-sm">Ya, Lanjutkan</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Custom Bootstrap Input Prompt Modal -->
+    <div class="modal fade" id="appPromptModal" tabindex="-1" aria-hidden="true" style="z-index: 1065;">
+      <div class="modal-dialog modal-dialog-centered" style="max-width: 460px;">
+        <div class="modal-content rounded-4 border-0 shadow-lg">
+          <div class="modal-header border-bottom-0 pb-0 pt-4 px-4">
+            <h5 class="modal-title fw-bold d-flex align-items-center gap-2" id="appPromptModalTitle">
+              <i class="bi bi-pencil-square text-primary fs-3" id="appPromptModalIcon"></i>
+              <span id="appPromptModalTitleText">Masukkan Keterangan</span>
+            </h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body py-3 px-4">
+            <div id="appPromptModalMessage" class="small text-muted mb-2"></div>
+            <textarea id="appPromptModalInput" class="form-control rounded-3 border-secondary-subtle" rows="3" placeholder="Tuliskan keterangan..."></textarea>
+            <div id="appPromptModalError" class="text-danger small mt-1.5 d-none"><i class="bi bi-exclamation-circle me-1"></i> Input ini wajib diisi.</div>
+          </div>
+          <div class="modal-footer border-top-0 pt-0 pb-4 px-4">
+            <button type="button" class="btn btn-light border rounded-pill px-4 fw-semibold text-secondary" data-bs-dismiss="modal">Batal</button>
+            <button type="button" id="appPromptModalOkBtn" class="btn btn-primary rounded-pill px-4 fw-bold shadow-sm">Kirim</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Custom Bootstrap Modal Helper Script -->
+    <script>
+      (function() {
+        window.showConfirmModal = function(options) {
+          return new Promise(function(resolve) {
+            options = options || {};
+            const modalEl = document.getElementById('appConfirmModal');
+            if (!modalEl || typeof bootstrap === 'undefined') {
+              resolve(confirm(options.message || 'Apakah Anda yakin?'));
+              return;
+            }
+
+            const titleText = document.getElementById('appConfirmModalTitleText');
+            const msgEl = document.getElementById('appConfirmModalMessage');
+            const iconEl = document.getElementById('appConfirmModalIcon');
+            const okBtn = document.getElementById('appConfirmModalOkBtn');
+
+            if (titleText) titleText.textContent = options.title || 'Konfirmasi';
+            if (msgEl) msgEl.innerHTML = options.message || 'Apakah Anda yakin ingin melanjutkan?';
+
+            const type = options.type || 'warning';
+            if (iconEl) {
+              iconEl.className = 'fs-3 bi ' + (
+                type === 'danger' ? 'bi-exclamation-triangle-fill text-danger' :
+                type === 'success' ? 'bi-check-circle-fill text-success' :
+                type === 'info' ? 'bi-info-circle-fill text-info' :
+                'bi-question-circle-fill text-warning'
+              );
+            }
+
+            if (okBtn) {
+              okBtn.textContent = options.confirmText || 'Ya, Lanjutkan';
+              okBtn.className = 'btn rounded-pill px-4 fw-bold shadow-sm ' + (
+                type === 'danger' ? 'btn-danger text-white' :
+                type === 'success' ? 'btn-success text-white' :
+                type === 'info' ? 'btn-info text-white' :
+                'btn-warning text-dark'
+              );
+            }
+
+            const bsModal = bootstrap.Modal.getOrCreateInstance(modalEl);
+            let resolved = false;
+
+            const handleOk = function() {
+              resolved = true;
+              bsModal.hide();
+              resolve(true);
+            };
+
+            const handleHidden = function() {
+              okBtn.removeEventListener('click', handleOk);
+              modalEl.removeEventListener('hidden.bs.modal', handleHidden);
+              if (!resolved) resolve(false);
+            };
+
+            okBtn.onclick = handleOk;
+            modalEl.addEventListener('hidden.bs.modal', handleHidden, { once: true });
+
+            bsModal.show();
+          });
+        };
+
+        window.showPromptModal = function(options) {
+          return new Promise(function(resolve) {
+            options = options || {};
+            const modalEl = document.getElementById('appPromptModal');
+            if (!modalEl || typeof bootstrap === 'undefined') {
+              resolve(prompt(options.message || 'Masukkan data:'));
+              return;
+            }
+
+            const titleText = document.getElementById('appPromptModalTitleText');
+            const msgEl = document.getElementById('appPromptModalMessage');
+            const inputEl = document.getElementById('appPromptModalInput');
+            const errorEl = document.getElementById('appPromptModalError');
+            const okBtn = document.getElementById('appPromptModalOkBtn');
+
+            if (titleText) titleText.textContent = options.title || 'Masukkan Keterangan';
+            if (msgEl) {
+              msgEl.innerHTML = options.message || '';
+              msgEl.style.display = options.message ? 'block' : 'none';
+            }
+            if (inputEl) {
+              inputEl.value = options.defaultValue || '';
+              inputEl.placeholder = options.placeholder || 'Tuliskan keterangan...';
+              inputEl.classList.remove('is-invalid');
+            }
+            if (errorEl) errorEl.classList.add('d-none');
+
+            if (okBtn) {
+              okBtn.textContent = options.confirmText || 'Kirim';
+              okBtn.className = 'btn rounded-pill px-4 fw-bold shadow-sm ' + (options.btnClass || 'btn-danger');
+            }
+
+            const bsModal = bootstrap.Modal.getOrCreateInstance(modalEl);
+            let resolved = false;
+
+            const handleOk = function() {
+              const val = inputEl ? inputEl.value.trim() : '';
+              if (options.required !== false && !val) {
+                if (inputEl) inputEl.classList.add('is-invalid');
+                if (errorEl) errorEl.classList.remove('d-none');
+                return;
+              }
+              resolved = true;
+              bsModal.hide();
+              resolve(val);
+            };
+
+            const handleHidden = function() {
+              okBtn.removeEventListener('click', handleOk);
+              modalEl.removeEventListener('hidden.bs.modal', handleHidden);
+              if (!resolved) resolve(null);
+            };
+
+            okBtn.onclick = handleOk;
+            modalEl.addEventListener('hidden.bs.modal', handleHidden, { once: true });
+
+            bsModal.show();
+            setTimeout(function() { if (inputEl) inputEl.focus(); }, 350);
+          });
+        };
+
+        // Auto-intercept confirm attributes or inline confirm calls
+        document.addEventListener('click', function(e) {
+          const el = e.target.closest('[data-confirm], [onclick*="confirm("]');
+          if (!el) return;
+          const oc = el.getAttribute('onclick');
+          const dc = el.getAttribute('data-confirm');
+          const hasConfirmCall = (oc && oc.indexOf('confirm(') >= 0);
+          if (dc !== null || hasConfirmCall) {
+            if (el._customConfirmed) {
+              el._customConfirmed = false;
+              return;
+            }
+            e.preventDefault();
+            e.stopImmediatePropagation();
+
+            let msg = dc;
+            if (!msg && oc) {
+              const fq = oc.indexOf("'");
+              const lq = oc.lastIndexOf("'");
+              if (fq !== -1 && lq > fq) {
+                msg = oc.substring(fq + 1, lq);
+              } else {
+                const fdq = oc.indexOf('"');
+                const ldq = oc.lastIndexOf('"');
+                if (fdq !== -1 && ldq > fdq) {
+                  msg = oc.substring(fdq + 1, ldq);
+                }
+              }
+            }
+            if (!msg) msg = 'Apakah Anda yakin ingin melanjutkan?';
+
+            window.showConfirmModal({
+              title: el.getAttribute('data-confirm-title') || 'Konfirmasi',
+              message: msg,
+              type: el.getAttribute('data-confirm-type') || (el.classList.contains('btn-danger') ? 'danger' : 'warning'),
+              confirmText: el.getAttribute('data-confirm-btn') || 'Ya, Lanjutkan'
+            }).then(function(confirmed) {
+              if (confirmed) {
+                el._customConfirmed = true;
+                if (el.tagName === 'A' && el.href) {
+                  window.location.href = el.href;
+                } else {
+                  const form = el.form || el.closest('form');
+                  if (form) {
+                    if (el.name && el.value && el.tagName === 'BUTTON') {
+                      const h = document.createElement('input');
+                      h.type = 'hidden'; h.name = el.name; h.value = el.value;
+                      form.appendChild(h);
+                    }
+                    form.submit();
+                  } else {
+                    el.click();
+                  }
+                }
+              }
+            });
+          }
+        }, true);
+      })();
+    </script>
+
     <!-- Global Toast Notification Engine (Auto-hide in 2 seconds) -->
     <script>
       function showToast(message, type = 'success', duration = 2000) {
@@ -1209,14 +1437,14 @@ export function renderLayout(title: string, user: User, content: string, activeN
         alerts.forEach(alert => alert.remove());
       });
 
-      // Global Helper: Hapus Dokumen Siswa dari Cloudflare R2 + Cloudflare D1 (Menggunakan Custom Confirm & Alert)
+      // Global Helper: Hapus Dokumen Siswa dari Cloudflare R2 + Cloudflare D1
       async function deleteStudentDocument(studentId, docType, docLabel) {
-        const confirmed = await window.customConfirm(
-          'Apakah Anda yakin ingin menghapus ' + docLabel + '? Berkas akan dihapus secara permanen dari Cloudflare R2 Object Storage dan database Cloudflare D1.',
-          'Konfirmasi Hapus Dokumen',
-          'Ya, Hapus',
-          'btn-danger'
-        );
+        const confirmed = await window.showConfirmModal({
+          title: 'Konfirmasi Hapus Dokumen',
+          message: 'Apakah Anda yakin ingin menghapus <b>' + docLabel + '</b>? Berkas akan dihapus secara permanen dari Cloudflare R2 Storage & D1 Database.',
+          type: 'danger',
+          confirmText: 'Ya, Hapus Berkala'
+        });
         if (!confirmed) {
           return;
         }
@@ -1233,12 +1461,11 @@ export function renderLayout(title: string, user: User, content: string, activeN
             showToast(data.message || 'Dokumen berhasil dihapus dari Cloudflare R2 & D1.', 'success', 2500);
             setTimeout(() => location.reload(), 600);
           } else {
-            await window.customAlert('Gagal Menghapus: ' + (data.message || 'Terjadi kesalahan.'), 'Kesalahan');
             showToast(data.message || 'Gagal menghapus.', 'danger', 3000);
           }
         } catch (err) {
           console.error(err);
-          await window.customAlert('Terjadi kesalahan jaringan saat menghapus dokumen.', 'Kesalahan Jaringan');
+          showToast('Terjadi kesalahan jaringan saat menghapus dokumen.', 'danger', 3000);
         }
       }
     </script>
@@ -1454,14 +1681,15 @@ export function renderLayout(title: string, user: User, content: string, activeN
         // Intercept Form Submissions dengan class auto-compress-form atau upload photo
         document.querySelectorAll('form.auto-compress-form, form[action*="upload-photo"]').forEach(function(form) {
           form.addEventListener('submit', async function(e) {
-            const fileInputs = form.querySelectorAll('input[type="file"]');
+            const fileInputs = Array.from(form.querySelectorAll('input[type="file"]'));
             let hasBigFile = false;
 
-            fileInputs.forEach(input => {
-              if (input.files && input.files[0] && input.files[0].type && input.files[0].type.startsWith('image/') && input.files[0].size > 1024 * 1024) {
+            for (let i = 0; i < fileInputs.length; i++) {
+              const inp = fileInputs[i];
+              if (inp.files && inp.files[0] && inp.files[0].type && inp.files[0].type.startsWith('image/') && inp.files[0].size > 1024 * 1024) {
                 hasBigFile = true;
               }
-            });
+            }
 
             if (hasBigFile) {
               e.preventDefault();
@@ -1472,12 +1700,13 @@ export function renderLayout(title: string, user: User, content: string, activeN
               if (submitBtn) submitBtn.disabled = true;
 
               try {
-                for (const input of fileInputs) {
-                  if (input.files && input.files[0] && input.files[0].type && input.files[0].type.startsWith('image/') && input.files[0].size > 1024 * 1024) {
-                    const compressed = await compressPhotoFile(input.files[0], 500 * 1024);
+                for (let i = 0; i < fileInputs.length; i++) {
+                  const inp = fileInputs[i];
+                  if (inp.files && inp.files[0] && inp.files[0].type && inp.files[0].type.startsWith('image/') && inp.files[0].size > 1024 * 1024) {
+                    const compressed = await compressPhotoFile(inp.files[0], 500 * 1024);
                     const dt = new DataTransfer();
                     dt.items.add(compressed);
-                    input.files = dt.files;
+                    inp.files = dt.files;
                   }
                 }
               } catch(err) {
@@ -1522,7 +1751,7 @@ export function renderLayout(title: string, user: User, content: string, activeN
                   let html = '';
                   users.forEach(function(u) {
                     let badgeColor = u.user_role === 'admin' ? 'bg-danger' : (u.user_role === 'guru' ? 'bg-primary' : 'bg-success');
-                    let defaultSvg = "${DEFAULT_AVATAR}";
+                    let defaultSvg = ${JSON.stringify(DEFAULT_AVATAR)};
                     let avatar = u.avatar_url || defaultSvg;
                     html += '<div class="list-group-item border rounded-3 p-2 d-flex align-items-center justify-content-between shadow-sm">' +
                               '<div class="d-flex align-items-center gap-3">' +
@@ -1585,14 +1814,14 @@ export function renderLayout(title: string, user: User, content: string, activeN
                 let html = '';
                 if (data.role === 'admin') {
                   if (data.pending_count > 0) {
-                    html = '<span class="badge bg-warning text-dark px-2 rounded-pill font-monospace" style="font-size: 11px;" title="Ada ' + data.pending_count + ' dokumen menunggu review">' + data.pending_count + ' Baru</span>';
+                    html = '<span class="badge bg-warning text-dark px-2 rounded-pill font-monospace" style="font-size: 11px;" title="Ada ' + data.pending_count + ' siswa menunggu review">' + data.pending_count + ' Baru</span>';
                   }
                 } else if (data.role === 'guru') {
                   if (data.approved_count > 0) {
-                    html += '<span class="badge bg-success px-1.5 py-0.5 rounded-pill font-monospace" style="font-size: 10px;" title="' + data.approved_count + ' dokumen disetujui">' + data.approved_count + '</span>';
+                    html += '<span class="badge bg-success px-1.5 py-0.5 rounded-pill font-monospace" style="font-size: 10px;" title="' + data.approved_count + ' siswa disetujui">' + data.approved_count + '</span>';
                   }
                   if (data.rejected_count > 0) {
-                    html += '<span class="badge bg-danger px-1.5 py-0.5 rounded-pill font-monospace" style="font-size: 10px;" title="' + data.rejected_count + ' dokumen ditolak">' + data.rejected_count + '</span>';
+                    html += '<span class="badge bg-danger px-1.5 py-0.5 rounded-pill font-monospace" style="font-size: 10px;" title="' + data.rejected_count + ' siswa ditolak">' + data.rejected_count + '</span>';
                   }
                 }
                 badgeContainer.innerHTML = html;
@@ -1607,15 +1836,15 @@ export function renderLayout(title: string, user: User, content: string, activeN
         setInterval(fetchReviewStats, 5000);
 
         // --------------------------------------------------
-        // Client-side Inactivity & Tab Visibility Monitor (5 Min Timeout)
+        // Client-side Inactivity & Tab Visibility Monitor (20 Min Timeout)
         // --------------------------------------------------
         (function() {
-          const TIMEOUT_MS = 5 * 60 * 1000; // 5 Menit = 300.000 ms
+          const TIMEOUT_MS = 20 * 60 * 1000; // 20 Menit = 1.200.000 ms
           let inactivityTimer = null;
           let lastInteractionTime = Date.now();
 
           function triggerAutoLogout() {
-            const msg = encodeURIComponent('Sesi Anda telah berakhir karena tidak aktif selama 5 menit.');
+            const msg = encodeURIComponent('Sesi Anda telah berakhir karena tidak aktif selama 20 menit.');
             window.location.href = '/logout?flash=' + msg;
           }
 
@@ -1702,12 +1931,6 @@ export function renderLayout(title: string, user: User, content: string, activeN
           }
         });
       });
-    </script>
-
-    ${renderGlobalModalHTML()}
-
-    <script>
-      ${renderGlobalModalJS()}
     </script>
 
   </body>

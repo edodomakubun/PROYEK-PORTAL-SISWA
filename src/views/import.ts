@@ -1,4 +1,4 @@
-﻿import { Role } from '../types';
+import { Role } from '../types';
 import { renderLayout } from './layout';
 
 export function renderImportPage(userRole: Role): string {
@@ -866,7 +866,13 @@ export function renderImportPage(userRole: Role): string {
             ? 'Apakah Anda yakin ingin memperbarui data siswa berdasarkan ID Student di database D1?'
             : 'Apakah Anda yakin ingin menyimpan hasil validasi data ke database D1?';
 
-          if (!confirm(confirmMsg)) return;
+          const confirmed = await window.showConfirmModal({
+            title: 'Konfirmasi Impor Data',
+            message: confirmMsg,
+            type: 'warning',
+            confirmText: 'Ya, Simpan ke D1'
+          });
+          if (!confirmed) return;
 
           btnSubmit.disabled = true;
           btnSubmit.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span> Mengirim ke Database...';
