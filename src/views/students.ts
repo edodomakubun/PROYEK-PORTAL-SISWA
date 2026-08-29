@@ -1970,7 +1970,7 @@ export function renderStudentDetailPage(
                           '<strong class="text-dark fs-6">' +
                             '<i class="bi ' + (d.gender === 'Laki-laki' ? 'bi-gender-male text-primary' : 'bi-gender-female text-danger') + ' me-1"></i>' +
                             (d.gender || '-') +
-                          'strong>' +
+                          '</strong>' +
                           '<div class="small text-muted">Kode Tanggal NIK: <code>' + (d.birthDateRaw || '-') + '</code></div>' +
                         '</div>' +
                       '</div>' +
