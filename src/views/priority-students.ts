@@ -1,4 +1,4 @@
-import { User, PriorityStudent, Student, MasterClass } from '../types';
+﻿import { User, PriorityStudent, Student, MasterClass } from '../types';
 import { DEFAULT_AVATAR, formatWIT, formatWITDate } from './helpers';
 import { renderLayout } from './layout';
 
@@ -66,7 +66,7 @@ export function renderPriorityStudentsPage(
                   <p class="mb-0 text-white-50 small">
                     ${isAdmin
       ? 'Tandai dan kelola daftar siswa yang membutuhkan perhatian khusus atau kelengkapan berkas mendesak.'
-      : 'Daftar siswa yang memerlukan tindakan / kelengkapan berkas khusus dari Guru. Klik tombol centang (âœ”) setelah semua kebutuhan terpenuhi.'}
+      : 'Daftar siswa yang memerlukan tindakan / kelengkapan berkas khusus dari Guru. Klik tombol centang (✔) setelah semua kebutuhan terpenuhi.'}
                   </p>
                 </div>
               </div>
@@ -236,7 +236,7 @@ export function renderPriorityStudentsPage(
                             <i class="bi ${hasPhoto ? 'bi-check-circle-fill' : 'bi-x-circle-fill'}"></i> Foto Profil Siswa
                           </span>
                           ${hasPhoto ? `
-                            <span class="badge bg-success rounded-pill">âœ” Terpenuhi</span>
+                            <span class="badge bg-success rounded-pill">✔ Terpenuhi</span>
                           ` : `
                             <button type="button" class="btn btn-outline-danger btn-sm rounded-pill py-0 px-2 small" onclick="openQuickUploadModal(${ps.student_id}, '${ps.name}', 'photo')">
                               <i class="bi bi-upload me-1"></i> Unggah Foto
@@ -252,7 +252,7 @@ export function renderPriorityStudentsPage(
                             <i class="bi ${hasKk ? 'bi-check-circle-fill' : 'bi-file-earmark-x-fill'}"></i> Kartu Keluarga (KK)
                           </span>
                           ${hasKk ? `
-                            <span class="badge bg-success rounded-pill">âœ” Terpenuhi</span>
+                            <span class="badge bg-success rounded-pill">✔ Terpenuhi</span>
                           ` : `
                             <button type="button" class="btn btn-outline-info btn-sm rounded-pill py-0 px-2 small" onclick="openQuickUploadModal(${ps.student_id}, '${ps.name}', 'kartu_keluarga')">
                               <i class="bi bi-upload me-1"></i> Unggah KK
@@ -268,7 +268,7 @@ export function renderPriorityStudentsPage(
                             <i class="bi ${hasAkte ? 'bi-check-circle-fill' : 'bi-file-earmark-x-fill'}"></i> Akte Kelahiran
                           </span>
                           ${hasAkte ? `
-                            <span class="badge bg-success rounded-pill">âœ” Terpenuhi</span>
+                            <span class="badge bg-success rounded-pill">✔ Terpenuhi</span>
                           ` : `
                             <button type="button" class="btn btn-outline-danger btn-sm rounded-pill py-0 px-2 small" onclick="openQuickUploadModal(${ps.student_id}, '${ps.name}', 'akte_kelahiran')">
                               <i class="bi bi-upload me-1"></i> Unggah Akte
@@ -291,7 +291,7 @@ export function renderPriorityStudentsPage(
                       <i class="bi bi-person-lines-fill me-1"></i> Lihat Profil Lengkap Siswa
                     </a>
 
-                    <!-- MAIN TEACHER CHECK BUTTON (âœ”) -->
+                    <!-- MAIN TEACHER CHECK BUTTON (✔) -->
                     <button type="button" 
                             class="btn ${allSatisfied ? 'btn-success' : 'btn-outline-success'} btn-md w-100 rounded-pill fw-bold shadow-sm d-flex align-items-center justify-content-center gap-2 py-2"
                             onclick="completePriorityStudent(${ps.id}, '${(ps.name || '').replace(/'/g, "\\'")}')">
