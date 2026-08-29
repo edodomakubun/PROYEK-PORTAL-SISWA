@@ -1,0 +1,213 @@
+openapi: 3.0.0
+info:
+  title: Api KTP Check / ID Verification
+  version: 1.0.0
+  description: >-
+    Verify Indonesian identity data using NIK, name, date of birth, and an identity document.
+    API.CO.ID generates the reference number and uses account email plus approved KYC phone
+    server-side. Requests require commercial access and an approved eKYC requirement.
+    Points are charged only after a successful provider response.
+servers:
+  - url: https://use.api.co.id
+tags:
+  - name: KTP Check
+    description: KTP identity verification through Glacier/DCI.
+paths:
+  /id-verification/verify:
+    post:
+      tags:
+        - KTP Check
+      summary: Verify KTP identity
+      description: >-
+        Matches NIK, name, date of birth, and an identity document. A rejected
+        identity match is returned as a processed business response with
+        `result: rejected`. Do not log NIK or image/base64 data.
+      parameters:
+        - $ref: '#/components/parameters/ApiKey'
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/IDVerifyRequest'
+      responses:
+        '200':
+          description: Verification processed successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IDSuccessResponse'
+              examples:
+                verified:
+                  value:
+                    is_success: true
+                    message: Success
+                    data:
+                      reference_number: REF-20260714-0001
+                      channel_id: '001'
+                      result: verified
+                      message: digital certificate has been issued
+                rejected:
+                  value:
+                    is_success: true
+                    message: Success
+                    data:
+                      reference_number: REF-20260714-0002
+                      channel_id: '001'
+                      result: rejected
+                      message: identity did not match
+                      reject_reason:
+                        code: ID_MISMATCH
+                        reason: identity mismatch
+        '400':
+          description: Required identity file is missing, unsupported, or larger than 5 MB
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/ErrorResponse'}
+              examples:
+                invalidFile:
+                  value: {is_success: false, message: 'Invalid identity file type. Only JPG, JPEG, and PNG image files are allowed'}
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '402':
+          $ref: '#/components/responses/PaymentRequired'
+        '403':
+          $ref: '#/components/responses/KycRequired'
+        '422':
+          description: Identity fields are invalid
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/ErrorResponse'}
+              examples:
+                invalidNIK:
+                  value: {is_success: false, message: nik must be 16 numeric characters}
+                invalidDOB:
+                  value: {is_success: false, message: date_of_birth must use DD-MM-YYYY format}
+                missingKYCPhone:
+                  value: {is_success: false, message: approved KYC phone is required}
+        '429':
+          $ref: '#/components/responses/QuotaExceeded'
+        '500':
+          description: Provider channel or internal configuration error
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/ErrorResponse'}
+              example: {is_success: false, message: provider channel misconfigured}
+        '502':
+          $ref: '#/components/responses/BadGateway'
+        '504':
+          $ref: '#/components/responses/GatewayTimeout'
+components:
+  parameters:
+    ApiKey:
+      name: x-api-co-id
+      in: header
+      required: true
+      description: Your API.CO.ID API key
+      schema:
+        type: string
+      example: '{{api_key}}'
+  schemas:
+    IDVerifyRequest:
+      type: object
+      required: [nik, name, date_of_birth, identity]
+      properties:
+        nik:
+          type: string
+          pattern: '^[0-9]{16}$'
+          description: 16 digit Indonesian identity number
+          example: '1203122810970002'
+        name:
+          type: string
+          example: User Info
+        date_of_birth:
+          type: string
+          pattern: '^[0-9]{2}-[0-9]{2}-[0-9]{4}$'
+          description: Date of birth in DD-MM-YYYY format
+          example: 01-10-1990
+        identity:
+          type: string
+          format: binary
+          description: Identity document image in JPG, JPEG, or PNG format; maximum 5 MB
+    IDSuccessResponse:
+      type: object
+      required: [is_success, message, data]
+      properties:
+        is_success: {type: boolean, example: true}
+        message: {type: string, example: Success}
+        data:
+          type: object
+          required: [reference_number, channel_id, result]
+          properties:
+            reference_number: {type: string}
+            channel_id: {type: string, example: '001'}
+            result:
+              type: string
+              enum: [verified, rejected]
+            message: {type: string}
+            reject_reason:
+              type: object
+              nullable: true
+              properties:
+                code: {type: string}
+                reason: {type: string}
+    ErrorResponse:
+      type: object
+      required: [is_success, message]
+      properties:
+        is_success: {type: boolean, example: false}
+        message: {type: string}
+    AccessError:
+      type: object
+      properties:
+        error: {type: string}
+        message: {type: string}
+        product: {type: string, example: id-verification}
+        action: {type: string}
+        dashboard_url: {type: string, format: uri}
+  responses:
+    Unauthorized:
+      description: Missing or invalid API key
+      content:
+        application/json:
+          schema: {$ref: '#/components/schemas/ErrorResponse'}
+          example: {is_success: false, message: Unauthorized}
+    PaymentRequired:
+      description: Payment, subscription, or sufficient points are required
+      content:
+        application/json:
+          schema: {$ref: '#/components/schemas/AccessError'}
+          example:
+            error: payment_required
+            product: id-verification
+            message: Payment or sufficient points balance is required before eKYC can be activated.
+            dashboard_url: https://dashboard.api.co.id/subscriptions/id-verification
+    KycRequired:
+      description: eKYC is required, pending, incomplete, rejected, revoked, or expired
+      content:
+        application/json:
+          schema: {$ref: '#/components/schemas/AccessError'}
+          example:
+            error: kyc_required
+            message: eKYC approval is required before you can use this product.
+            product: id-verification
+            action: complete_kyc
+            dashboard_url: https://dashboard.api.co.id/access-requirements/id-verification
+    QuotaExceeded:
+      description: Product quota or rate limit exceeded
+      content:
+        application/json:
+          schema: {$ref: '#/components/schemas/ErrorResponse'}
+          example: {is_success: false, message: Quota exceeded}
+    BadGateway:
+      description: Provider authentication, response, or server error
+      content:
+        application/json:
+          schema: {$ref: '#/components/schemas/ErrorResponse'}
+          example: {is_success: false, message: upstream server error}
+    GatewayTimeout:
+      description: Provider request timed out
+      content:
+        application/json:
+          schema: {$ref: '#/components/schemas/ErrorResponse'}
+          example: {is_success: false, message: upstream timeout}

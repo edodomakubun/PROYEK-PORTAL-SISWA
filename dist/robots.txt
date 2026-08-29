@@ -1,0 +1,12 @@
+User-agent: *
+Allow: /
+Allow: /login
+Allow: /sitemap.xml
+
+# Retain privacy for protected administrative and student pages
+Disallow: /dashboard
+Disallow: /students
+Disallow: /audit-log
+Disallow: /api/
+
+Sitemap: https://portalsiswa.sdinpreslelingluan.com/sitemap.xml

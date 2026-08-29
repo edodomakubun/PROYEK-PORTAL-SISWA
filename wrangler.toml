@@ -1,0 +1,21 @@
+name = "portal-siswa"
+main = "src/index.ts"
+compatibility_date = "2024-04-01"
+
+# Static assets binding for AdminLTE 4.10 assets
+assets = { directory = "./dist", binding = "ASSETS" }
+
+# Cloudflare D1 Database Binding
+[[d1_databases]]
+binding = "DB"
+database_name = "portal-guru-db"
+database_id = "78c429d0-8f6e-40a4-bba5-cc1bb4f00b5b"
+
+# Cloudflare Object Storage Bindings (R2)
+[[r2_buckets]]
+binding = "PORTAL_SISWA_BUCKET"
+bucket_name = "portal-siswa-bucket"
+
+[[r2_buckets]]
+binding = "PORTAL_GURU_STORAGE"
+bucket_name = "portal-guru-storage"
