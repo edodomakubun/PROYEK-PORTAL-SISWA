@@ -2,6 +2,38 @@ import { Student, Role, StudentClassHistory, StudentDocument, User } from '../ty
 import { DEFAULT_AVATAR, formatWIT, formatWITDate, formatIsoDate } from './helpers';
 import { renderLayout } from './layout';
 
+function renderDocStatusBox(type: 'AK' | 'KK', status: 'pending' | 'approved' | 'rejected' | null | undefined): string {
+  let borderColor = '#e2e8f0';
+  let bgColor = '#f8fafc';
+  let badgeColor = '#64748b';
+  let statusText = 'Belum Diupload';
+
+  if (status === 'approved') {
+    borderColor = '#a7f3d0';
+    bgColor = '#ecfdf5';
+    badgeColor = '#10b981';
+    statusText = 'Disetujui';
+  } else if (status === 'pending') {
+    borderColor = '#fde68a';
+    bgColor = '#fffbeb';
+    badgeColor = '#f59e0b';
+    statusText = 'Menunggu Review';
+  } else if (status === 'rejected') {
+    borderColor = '#fca5a5';
+    bgColor = '#fef2f2';
+    badgeColor = '#ef4444';
+    statusText = 'Ditolak';
+  }
+
+  return `
+    <div class="d-flex flex-column align-items-center justify-content-center p-2 rounded-3 text-center shadow-sm" 
+         style="width: 90px; min-height: 72px; border: 1px solid ${borderColor}; background-color: ${bgColor};">
+      <span class="badge rounded-pill fw-bold mb-1.5" style="background-color: ${badgeColor}; color: white; font-size: 0.72rem; padding: 0.25rem 0.55rem; min-width: 32px;">${type}</span>
+      <span class="fw-bold text-secondary" style="font-size: 0.65rem; line-height: 1.1;">${statusText}</span>
+    </div>
+  `;
+}
+
 export function renderStudentListPage(
   students: Student[],
   classes: string[],
@@ -128,11 +160,12 @@ export function renderStudentListPage(
               <th>NISN & NIPD</th>
               <th>Tempat Lahir</th>
               <th>Data Orang Tua</th>
+              <th class="text-center" style="width: 210px;">Status Dokumen</th>
               <th style="width: 170px;" class="text-center">Aksi</th>
             </tr>
           </thead>
           <tbody id="studentTableBody">
-            ${students.length === 0 ? `<tr><td colspan="7" class="text-center text-muted py-4">Tidak ada data siswa.</td></tr>` : ''}
+            ${students.length === 0 ? `<tr><td colspan="8" class="text-center text-muted py-4">Tidak ada data siswa.</td></tr>` : ''}
             ${students.map((s, i) => `
             <tr class="student-row" data-birth-place="${s.birth_place || ''}">
               <td class="text-center fw-semibold text-secondary">${i + 1}</td>
@@ -161,6 +194,12 @@ export function renderStudentListPage(
               <td>
                 <div class="small"><span class="fw-semibold text-dark">Ayah:</span> ${s.father_name || '-'}${s.is_father_alive === 0 ? ' <span class="text-danger">(Alm.)</span>' : ''}</div>
                 <div class="small mt-0.5"><span class="fw-semibold text-dark">Ibu:</span> ${s.mother_name || '-'}${s.is_mother_alive === 0 ? ' <span class="text-danger">(Alm.)</span>' : ''}</div>
+              </td>
+              <td>
+                <div class="d-flex align-items-center gap-2 justify-content-center">
+                  ${renderDocStatusBox('AK', s.akte_status)}
+                  ${renderDocStatusBox('KK', s.kk_status)}
+                </div>
               </td>
               <td class="text-center">
                 <div class="d-flex align-items-center justify-content-center gap-1">
