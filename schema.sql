@@ -50,6 +50,9 @@ CREATE TABLE IF NOT EXISTS students (
     photo_url TEXT NULL,
     birth_place TEXT,
     birth_date TEXT,
+    gender TEXT, -- 'Laki-Laki' / 'Perempuan'
+    religion TEXT, -- 'Islam', 'Kristen', 'Katolik', 'Hindu', 'Buddha', 'Khonghucu', 'Lainnya'
+    entry_date TEXT, -- Tanggal Masuk Sekolah 'dd/mm/yyyy'
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );
 

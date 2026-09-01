@@ -37,6 +37,9 @@ export interface Student {
   photo_url: string | null;
   birth_place: string | null;
   birth_date: string | null;
+  gender?: string | null;
+  religion?: string | null;
+  entry_date?: string | null;
   created_at?: string;
   // Parent info joined
   father_name?: string | null;
@@ -70,7 +73,24 @@ export interface StudentMutation {
   nik?: string | null;
   nipd?: string | null;
   nisn?: string | null;
+  birth_place?: string | null;
+  birth_date?: string | null;
+  photo_url?: string | null;
+  father_name?: string | null;
+  is_father_alive?: number | null;
+  mother_name?: string | null;
+  is_mother_alive?: number | null;
+  akte_url?: string | null;
+  akte_path?: string | null;
+  akte_status?: string | null;
+  kk_url?: string | null;
+  kk_path?: string | null;
+  kk_status?: string | null;
+  doc_photo_url?: string | null;
+  doc_photo_path?: string | null;
+  doc_photo_status?: string | null;
 }
+
 
 export interface StudentParent {
   id: number;

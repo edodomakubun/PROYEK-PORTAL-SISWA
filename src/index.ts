@@ -1,8 +1,10 @@
 import { Hono } from 'hono';
 import { AuditLog, Env, HonoVariables, MasterClass, OnlineUser, PriorityStudent, Student, StudentClassHistory, StudentDocument, StudentMutation, User } from './types';
-import { authMiddleware, getClientIp, getCurrentUser, getUserAgent, logAudit, loginUser, logoutUser, updateActiveSession, hashPin } from './auth';
-import { renderAuditLogPage, renderDashboardPage, renderImportPage, renderLayout, renderLoginPage, renderStudentDetailPage, renderStudentListPage, renderSetupAccountsPage, renderAdminSettingsPage, renderPrintCardsPage, renderForgotPasswordPage, renderPriorityStudentsPage, renderMutationsPage, renderPromotionPage, renderGraduatedStudentsPage, renderGraduatedStudentDetailPage, renderDocumentReviewPage, renderDocumentSubmissionsPage, renderHomeroomManagementPage, renderGuidePage, renderErrorPage } from './views/templates';
+import { authMiddleware, getClientIp, getCurrentUser, getUserAgent, logAudit, loginUser, loginUserBySso, logoutUser, updateActiveSession, hashPin } from './auth';
+import { renderAuditLogPage, renderDashboardPage, renderImportPage, renderLayout, renderLoginPage, renderStudentDetailPage, renderStudentListPage, renderSetupAccountsPage, renderAdminSettingsPage, renderPrintCardsPage, renderForgotPasswordPage, renderPriorityStudentsPage, renderMutationsPage, renderPromotionPage, renderGraduatedStudentsPage, renderGraduatedStudentDetailPage, renderDocumentReviewPage, renderDocumentSubmissionsPage, renderHomeroomManagementPage, renderGuidePage, renderErrorPage, renderSKMutasiPrintPage } from './views/templates';
+import { getDefaultSKMutasiArrayBuffer } from './sk-template-default';
 import * as XLSX from 'xlsx';
+import PizZip from 'pizzip/js/index.js';
 
 const app = new Hono<{ Bindings: Env; Variables: HonoVariables }>();
 
@@ -133,6 +135,27 @@ app.get('/logout', async (c) => {
     return c.redirect(`/login?flash=${encodeURIComponent(flash)}`);
   }
   return c.redirect('/login');
+});
+
+// SSO Callback / Direct Auth Endpoint (Unprotected)
+app.post('/api/auth/sso-callback', async (c) => {
+  try {
+    const body = await c.req.json();
+    const ssoUser = body.ssoUser;
+    if (!ssoUser) {
+      return c.json({ success: false, error: 'Data profil SSO tidak ditemukan.' }, 400);
+    }
+
+    const user = await loginUserBySso(c, ssoUser);
+    if (!user) {
+      return c.json({ success: false, error: 'Gagal mengautentikasi akun SSO di Portal Siswa.' }, 401);
+    }
+
+    return c.json({ success: true, redirect: '/dashboard', user });
+  } catch (err: any) {
+    console.error('SSO Callback error:', err);
+    return c.json({ success: false, error: err.message || 'Terjadi kesalahan pada server.' }, 500);
+  }
 });
 
 // Protected routes middleware
@@ -374,7 +397,7 @@ app.get('/students', async (c) => {
 
     let sql = `
       SELECT 
-        s.id, s.nipd, s.nisn, s.nik, s.name, s.class_name, s.photo_url, s.birth_place, s.birth_date, s.status,
+        s.id, s.nipd, s.nisn, s.nik, s.name, s.class_name, s.gender, s.religion, s.entry_date, s.photo_url, s.birth_place, s.birth_date, s.status,
         p.father_name, p.is_father_alive, p.mother_name, p.is_mother_alive,
         akte.status as akte_status,
         kk.status as kk_status
@@ -407,7 +430,7 @@ app.get('/students', async (c) => {
 
     let sql = `
       SELECT 
-        s.id, s.nipd, s.nisn, s.nik, s.name, s.class_name, s.photo_url, s.birth_place, s.birth_date,
+        s.id, s.nipd, s.nisn, s.nik, s.name, s.class_name, s.gender, s.religion, s.entry_date, s.photo_url, s.birth_place, s.birth_date,
         p.father_name, p.is_father_alive, p.mother_name, p.is_mother_alive,
         akte.status as akte_status,
         kk.status as kk_status
@@ -542,9 +565,18 @@ app.get('/mutations', async (c) => {
       SELECT 
         m.id, m.student_id, m.mutation_type, m.mutation_date, m.reason, m.destination_school,
         COALESCE(m.status, 'approved') as status, m.rejection_note, m.reviewed_by, m.reviewed_at, m.created_by, m.created_at,
-        s.name as student_name, s.class_name, s.nik, s.nipd, s.nisn, s.status as student_status
+        s.name as student_name, s.class_name, s.nik, s.nipd, s.nisn, s.status as student_status,
+        s.birth_place, s.birth_date, s.gender, s.religion, s.entry_date, s.photo_url,
+        p.father_name, p.is_father_alive, p.mother_name, p.is_mother_alive,
+        akte.file_url as akte_url, akte.file_path as akte_path, akte.status as akte_status,
+        kk.file_url as kk_url, kk.file_path as kk_path, kk.status as kk_status,
+        foto.file_url as doc_photo_url, foto.file_path as doc_photo_path, foto.status as doc_photo_status
       FROM student_mutations m
       JOIN students s ON m.student_id = s.id
+      LEFT JOIN student_parents p ON s.id = p.student_id
+      LEFT JOIN student_documents akte ON s.id = akte.student_id AND akte.doc_type = 'akte_kelahiran'
+      LEFT JOIN student_documents kk ON s.id = kk.student_id AND kk.doc_type = 'kartu_keluarga'
+      LEFT JOIN student_documents foto ON s.id = foto.student_id AND foto.doc_type = 'foto'
     `;
     const params: any[] = [];
     if (restrictClass) {
@@ -581,6 +613,247 @@ app.get('/mutations', async (c) => {
 
   const content = renderMutationsPage(mutations, activeStudents, user, flash);
   return c.html(renderLayout('Mutasi Siswa', user, content, 'mutations'));
+});
+
+// Helper to generate filled SK Mutasi DOCX Buffer
+async function generateSKMutasiDocxBuffer(templateBuffer: ArrayBuffer, m: any): Promise<Uint8Array> {
+  const zip = new (PizZip as any)(templateBuffer);
+  let docXml = zip.file('word/document.xml').asText();
+
+  const studentName = m.student_name || '-';
+  const nipd = m.nipd || '-';
+  const nisn = m.nisn || '-';
+  const nik = m.nik || '-';
+  const gender = m.gender || '-';
+  const religion = m.religion || '-';
+  const className = m.class_name || '-';
+  const motherName = m.mother_name || '-';
+  const entryDate = m.entry_date || '-';
+
+  let birthPlaceDate = '-';
+  if (m.birth_place || m.birth_date) {
+    let formattedDob = m.birth_date || '';
+    try {
+      if (m.birth_date) {
+        const bd = new Date(m.birth_date);
+        if (!isNaN(bd.getTime())) {
+          const MONTHS = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
+          formattedDob = `${bd.getUTCDate()} ${MONTHS[bd.getUTCMonth()]} ${bd.getUTCFullYear()}`;
+        }
+      }
+    } catch (e) {}
+    birthPlaceDate = (m.birth_place ? m.birth_place + ', ' : '') + formattedDob;
+  }
+
+  const destinationSchool = m.destination_school || '-';
+  const reason = m.reason || '-';
+  
+  let requestDate = m.created_at || m.mutation_date || '-';
+  let effectiveDate = m.mutation_date || '-';
+  try {
+    const MONTHS = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
+    if (m.created_at) {
+      const rd = new Date(m.created_at);
+      if (!isNaN(rd.getTime())) requestDate = `${rd.getUTCDate()} ${MONTHS[rd.getUTCMonth()]} ${rd.getUTCFullYear()}`;
+    }
+    if (m.mutation_date) {
+      const ed = new Date(m.mutation_date);
+      if (!isNaN(ed.getTime())) effectiveDate = `${ed.getUTCDate()} ${MONTHS[ed.getUTCMonth()]} ${ed.getUTCFullYear()}`;
+    }
+  } catch(e) {}
+
+  const letterNum = String(m.id || 1).padStart(3, '0');
+  const monthNum = new Date(m.mutation_date || Date.now()).getMonth() + 1;
+  const ROMAN_MONTHS = ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X', 'XI', 'XII'];
+  const romanMonth = ROMAN_MONTHS[monthNum - 1] || 'VIII';
+  const yearNum = String(new Date(m.mutation_date || Date.now()).getFullYear());
+
+  const replacements: Record<string, string> = {
+    '{student_name}': studentName,
+    '{nipd}': nipd,
+    '{nisn}': nisn,
+    '{nik}': nik,
+    '{birth_place_date}': birthPlaceDate,
+    '{gender}': gender,
+    '{religion}': religion,
+    '{mother_name}': motherName,
+    '{class_name}': className,
+    '{entry_date}': entryDate,
+    '{request_date}': requestDate,
+    '{mutation_date}': effectiveDate,
+    '{destination_school}': destinationSchool,
+    '{reason}': reason,
+    '{letter_number}': letterNum,
+    '{roman_month}': romanMonth,
+    '{year}': yearNum
+  };
+
+  for (const [key, val] of Object.entries(replacements)) {
+    docXml = docXml.replaceAll(key, val);
+  }
+
+  zip.file('word/document.xml', docXml);
+  const outBuf = zip.generate({ type: 'uint8array', compression: 'DEFLATE' });
+  return outBuf;
+}
+
+// CETAK DIRECT SK MUTASI SISWA (HTML/PDF)
+app.get('/mutations/:id/print-sk', authMiddleware, async (c) => {
+  const user = c.get('user');
+  const paramId = c.req.param('id') || '';
+  const mutationId = parseInt(paramId, 10);
+  if (isNaN(mutationId) || mutationId <= 0) {
+    return c.html(renderErrorPage(400, 'ID Mutasi Tidak Valid', 'ID mutasi yang dimasukkan tidak valid.', undefined, user), 400);
+  }
+
+  const db = c.env.DB;
+  const mutation = await db.prepare(`
+    SELECT m.*, s.name as student_name, s.nipd, s.nisn, s.nik, s.class_name, s.gender, s.religion, s.entry_date, s.birth_place, s.birth_date,
+           p.mother_name
+    FROM student_mutations m
+    JOIN students s ON m.student_id = s.id
+    LEFT JOIN student_parents p ON p.student_id = s.id
+    WHERE m.id = ?
+  `).bind(mutationId).first();
+
+  if (!mutation) {
+    return c.html(renderErrorPage(404, 'Data Mutasi Tidak Ditemukan', 'Data mutasi yang Anda cari tidak ditemukan.', undefined, user), 404);
+  }
+
+  return c.html(renderSKMutasiPrintPage(mutation));
+});
+
+// API: DOWNLOAD SK MUTASI (.DOCX)
+app.get('/api/mutations/:id/download-sk', authMiddleware, async (c) => {
+  const user = c.get('user');
+  const paramId = c.req.param('id') || '';
+  const mutationId = parseInt(paramId, 10);
+  if (isNaN(mutationId) || mutationId <= 0) {
+    return c.json({ success: false, message: 'ID Mutasi tidak valid.' }, 400);
+  }
+
+  const db = c.env.DB;
+  const mutation: any = await db.prepare(`
+    SELECT m.*, s.name as student_name, s.nipd, s.nisn, s.nik, s.class_name, s.gender, s.religion, s.entry_date, s.birth_place, s.birth_date,
+           p.mother_name
+    FROM student_mutations m
+    JOIN students s ON m.student_id = s.id
+    LEFT JOIN student_parents p ON p.student_id = s.id
+    WHERE m.id = ?
+  `).bind(mutationId).first();
+
+  if (!mutation) {
+    return c.json({ success: false, message: 'Data mutasi tidak ditemukan.' }, 404);
+  }
+
+  let templateBuf: ArrayBuffer | null = null;
+  if (c.env.PORTAL_SISWA_BUCKET) {
+    try {
+      const r2Object = await c.env.PORTAL_SISWA_BUCKET.get('templates/sk_mutasi_template.docx');
+      if (r2Object) {
+        templateBuf = await r2Object.arrayBuffer();
+      }
+    } catch (e) {
+      console.warn('R2 template fetch failed, falling back to default template:', e);
+    }
+  }
+
+  if (!templateBuf) {
+    templateBuf = getDefaultSKMutasiArrayBuffer();
+  }
+
+  try {
+    const docxBuf = await generateSKMutasiDocxBuffer(templateBuf, mutation);
+    const rawName = String(mutation.student_name || 'Siswa');
+    const safeStudentName = rawName.replace(/[^a-zA-Z0-9_\-]/g, '_');
+
+    return new Response(docxBuf, {
+      status: 200,
+      headers: {
+        'Content-Type': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+        'Content-Disposition': `attachment; filename="SK_Mutasi_${safeStudentName}.docx"`
+      }
+    });
+  } catch (err: any) {
+    console.error('Error generating docx:', err);
+    return c.json({ success: false, message: 'Gagal membuat file SK Mutasi: ' + err.message }, 500);
+  }
+});
+
+// API: UPLOAD TEMPLATE SK MUTASI BY ADMIN (.DOCX)
+app.post('/api/admin/settings/upload-sk-template', authMiddleware, async (c) => {
+  const user = c.get('user');
+  if (user.role !== 'admin') {
+    return c.redirect('/admin/settings?flash=Akses+Ditolak:+Hanya+Admin+yang+dapat+mengunggah+template+SK.');
+  }
+
+  try {
+    const formData = await c.req.parseBody();
+    const file = formData.sk_template as File;
+
+    if (!file || typeof file === 'string' || !file.name.endsWith('.docx')) {
+      return c.redirect('/admin/settings?flash=Error:+Silakan+pilih+file+template+berformat+.docx');
+    }
+
+    const fileBuf = await file.arrayBuffer();
+
+    try {
+      const zipTest = new (PizZip as any)(fileBuf);
+      if (!zipTest.file('word/document.xml')) {
+        return c.redirect('/admin/settings?flash=Error:+File+.docx+tidak+valid+atau+rusak.');
+      }
+    } catch (zipErr) {
+      return c.redirect('/admin/settings?flash=Error:+File+.docx+tidak+valid.');
+    }
+
+    if (c.env.PORTAL_SISWA_BUCKET) {
+      await c.env.PORTAL_SISWA_BUCKET.put('templates/sk_mutasi_template.docx', fileBuf, {
+        httpMetadata: { contentType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' }
+      });
+    }
+
+    await logAudit(c.env.DB, {
+      userId: user.id,
+      userName: user.full_name || user.username,
+      userRole: user.role,
+      action: 'UPLOAD_SK_TEMPLATE',
+      status: 'SUCCESS',
+      ipAddress: getClientIp(c),
+      userAgent: getUserAgent(c),
+      details: 'Memperbarui file template SK Mutasi (.docx)'
+    });
+
+    return c.redirect('/admin/settings?flash=Template+SK+Mutasi+(.docx)+berhasil+diunggah+dan+diperbarui.');
+  } catch (err: any) {
+    console.error('Error uploading SK template:', err);
+    return c.redirect('/admin/settings?flash=Gagal+mengunggah+template:+'+encodeURIComponent(err.message));
+  }
+});
+
+// API: DOWNLOAD TEMPLATE SK MUTASI AKTIF (.DOCX)
+app.get('/api/admin/settings/download-sk-template', authMiddleware, async (c) => {
+  let templateBuf: ArrayBuffer | null = null;
+
+  if (c.env.PORTAL_SISWA_BUCKET) {
+    try {
+      const r2Object = await c.env.PORTAL_SISWA_BUCKET.get('templates/sk_mutasi_template.docx');
+      if (r2Object) {
+        templateBuf = await r2Object.arrayBuffer();
+      }
+    } catch (e) {}
+  }
+
+  if (!templateBuf) {
+    templateBuf = getDefaultSKMutasiArrayBuffer();
+  }
+
+  return new Response(templateBuf, {
+    status: 200,
+    headers: {
+      'Content-Type': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      'Content-Disposition': 'attachment; filename="Surat_Keterangan_Pindah_Sekolah.docx"'
+    }
+  });
 });
 
 // API: POST /api/students/mutate
@@ -1304,7 +1577,7 @@ app.get('/students/:id', async (c) => {
   // Fetch student & parent data
   const student = await db.prepare(`
     SELECT 
-      s.id, s.nipd, s.nisn, s.nik, s.name, s.class_name, s.photo_url, s.birth_place, s.birth_date,
+      s.id, s.nipd, s.nisn, s.nik, s.name, s.class_name, s.gender, s.religion, s.entry_date, s.photo_url, s.birth_place, s.birth_date,
       p.father_name, p.is_father_alive, p.mother_name, p.is_mother_alive,
       ps.required_photo, ps.required_kk, ps.required_akte
     FROM students s
@@ -1354,6 +1627,9 @@ app.post('/api/students', async (c) => {
   const nik = String(body.nik || '').trim() || null;
   const name = String(body.name || '').trim();
   const class_name = String(body.class_name || '').trim();
+  const gender = String(body.gender || '').trim() || null;
+  const religion = String(body.religion || '').trim() || null;
+  const entry_date = String(body.entry_date || '').trim() || null;
   const birth_place = String(body.birth_place || '').trim();
   const birth_date = String(body.birth_date || '').trim();
 
@@ -1364,10 +1640,10 @@ app.post('/api/students', async (c) => {
 
   // Insert into students table
   const insertStudent = await db.prepare(`
-    INSERT INTO students (nipd, nisn, nik, name, class_name, birth_place, birth_date)
-    VALUES (?, ?, ?, ?, ?, ?, ?)
+    INSERT INTO students (nipd, nisn, nik, name, class_name, gender, religion, entry_date, birth_place, birth_date)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     RETURNING id
-  `).bind(nipd, nisn, nik, name, class_name, birth_place, birth_date).first<{ id: number }>();
+  `).bind(nipd, nisn, nik, name, class_name, gender, religion, entry_date, birth_place, birth_date).first<{ id: number }>();
 
   if (insertStudent?.id) {
     // Create initial student_parents record
@@ -1406,14 +1682,17 @@ app.post('/api/students/:id/update', async (c) => {
   const nik = String(body.nik || '').trim() || null;
   const name = String(body.name || '').trim();
   const class_name = String(body.class_name || '').trim();
+  const gender = String(body.gender || '').trim() || null;
+  const religion = String(body.religion || '').trim() || null;
+  const entry_date = String(body.entry_date || '').trim() || null;
   const birth_place = String(body.birth_place || '').trim();
   const birth_date = String(body.birth_date || '').trim();
 
   await db.prepare(`
     UPDATE students 
-    SET nipd = ?, nisn = ?, nik = ?, name = ?, class_name = ?, birth_place = ?, birth_date = ?
+    SET nipd = ?, nisn = ?, nik = ?, name = ?, class_name = ?, gender = ?, religion = ?, entry_date = ?, birth_place = ?, birth_date = ?
     WHERE id = ?
-  `).bind(nipd, nisn, nik, name, class_name, birth_place, birth_date, studentId).run();
+  `).bind(nipd, nisn, nik, name, class_name, gender, religion, entry_date, birth_place, birth_date, studentId).run();
 
   return c.redirect(`/students/${studentId}?flash=Data+dasar+berhasil+perbarui.`);
 });
@@ -1469,7 +1748,7 @@ app.get('/api/students/export', async (c) => {
   // Fetch all students with parent data
   const studentsRes = await db.prepare(`
     SELECT 
-      s.id, s.nipd, s.nisn, s.nik, s.name, s.class_name, s.birth_place, s.birth_date,
+      s.id, s.nipd, s.nisn, s.nik, s.name, s.class_name, s.gender, s.religion, s.entry_date, s.birth_place, s.birth_date,
       p.father_name, p.is_father_alive, p.mother_name, p.is_mother_alive
     FROM students s
     LEFT JOIN student_parents p ON s.id = p.student_id
@@ -1499,39 +1778,33 @@ app.get('/api/students/export', async (c) => {
       ['DATA PESERTA DIDIK - KELAS ' + className],
       ['SD INPRES LELINGLUAN'],
       [],
-      ['ID Siswa', 'No', 'NIPD', 'NISN', 'NIK', 'Nama Lengkap', 'Kelas', 'Tempat Lahir', 'Tanggal Lahir', 'Nama Ayah', 'Status Ayah', 'Nama Ibu', 'Status Ibu']
+      ['ID Siswa', 'No', 'NIPD', 'NISN', 'NIK', 'Nama Lengkap', 'Kelas', 'Jenis Kelamin', 'Agama', 'Tanggal Masuk', 'Tempat Lahir', 'Tanggal Lahir', 'Nama Ayah', 'Status Ayah', 'Nama Ibu', 'Status Ibu']
     ];
 
-    // Helper untuk konversi format tanggal apapun ke dd-mm-yyyy
-    function formatDateDDMMYYYY(dateStr: string | null | undefined): string {
+    // Helper untuk konversi format tanggal apapun ke dd/mm/yyyy
+    function formatDateDDMMYYYYSlash(dateStr: string | null | undefined): string {
       if (!dateStr || dateStr.trim() === '' || dateStr.trim() === '-') return '';
       const clean = dateStr.trim();
 
-      // Jika sudah format dd-mm-yyyy (2 digit-2 digit-4 digit)
-      if (/^\d{2}-\d{2}-\d{4}$/.test(clean)) return clean;
+      const dmyMatch = clean.match(/^(\d{1,2})[-/](\d{1,2})[-/](\d{4})/);
+      if (dmyMatch) {
+        const [_, d, m, y] = dmyMatch;
+        return `${d.padStart(2, '0')}/${m.padStart(2, '0')}/${y}`;
+      }
 
-      // Jika format yyyy-mm-dd atau yyyy/mm/dd
       const isoMatch = clean.match(/^(\d{4})[-/](\d{1,2})[-/](\d{1,2})/);
       if (isoMatch) {
         const [_, y, m, d] = isoMatch;
-        return `${d.padStart(2, '0')}-${m.padStart(2, '0')}-${y}`;
+        return `${d.padStart(2, '0')}/${m.padStart(2, '0')}/${y}`;
       }
 
-      // Jika format dd/mm/yyyy
-      const slashMatch = clean.match(/^(\d{1,2})[/](\d{1,2})[/](\d{4})/);
-      if (slashMatch) {
-        const [_, d, m, y] = slashMatch;
-        return `${d.padStart(2, '0')}-${m.padStart(2, '0')}-${y}`;
-      }
-
-      // Fallback via Date object
       try {
         const dt = new Date(clean);
         if (!isNaN(dt.getTime())) {
-          const d = String(dt.getDate()).padStart(2, '0');
-          const m = String(dt.getMonth() + 1).padStart(2, '0');
-          const y = dt.getFullYear();
-          return `${d}-${m}-${y}`;
+          const d = String(dt.getUTCDate()).padStart(2, '0');
+          const m = String(dt.getUTCMonth() + 1).padStart(2, '0');
+          const y = dt.getUTCFullYear();
+          return `${d}/${m}/${y}`;
         }
       } catch (e) { }
 
@@ -1539,6 +1812,10 @@ app.get('/api/students/export', async (c) => {
     }
 
     classStudents.forEach((s, idx) => {
+      let genderVal = (s.gender || '').trim();
+      if (/^l(aki)?/i.test(genderVal)) genderVal = 'Laki-Laki';
+      else if (/^p(erempuan)?/i.test(genderVal)) genderVal = 'Perempuan';
+
       sheetData.push([
         s.id,
         idx + 1,
@@ -1547,8 +1824,11 @@ app.get('/api/students/export', async (c) => {
         s.nik ? String(s.nik) : '',
         s.name,
         s.class_name,
+        genderVal || '',
+        s.religion || '',
+        formatDateDDMMYYYYSlash(s.entry_date),
         s.birth_place || '',
-        formatDateDDMMYYYY(s.birth_date),
+        formatDateDDMMYYYYSlash(s.birth_date),
         s.father_name || '',
         s.is_father_alive === 0 ? 'Almarhum' : 'Hidup',
         s.mother_name || '',
@@ -1637,7 +1917,7 @@ app.post('/api/students/validate-import', async (c) => {
     // Ambil data siswa & orang tua yang sudah ada dari D1 DB
     const existingRes = await db.prepare(`
       SELECT 
-        s.id, s.nipd, s.nisn, s.nik, s.name, s.class_name, s.birth_place, s.birth_date,
+        s.id, s.nipd, s.nisn, s.nik, s.name, s.class_name, s.gender, s.religion, s.entry_date, s.birth_place, s.birth_date,
         p.father_name, p.mother_name
       FROM students s
       LEFT JOIN student_parents p ON s.id = p.student_id
@@ -1677,6 +1957,9 @@ app.post('/api/students/validate-import', async (c) => {
         if (isEmpty(matched.nisn) && r.nisn) changes.push('NISN');
         if (isEmpty(matched.nik) && r.nik) changes.push('NIK');
         if (isEmpty(matched.class_name) && r.class_name) changes.push('Kelas');
+        if (isEmpty(matched.gender) && r.gender) changes.push('Jenis Kelamin');
+        if (isEmpty(matched.religion) && r.religion) changes.push('Agama');
+        if (isEmpty(matched.entry_date) && r.entry_date) changes.push('Tanggal Masuk');
         if (isEmpty(matched.birth_place) && r.birth_place) changes.push('Tempat Lahir');
         if (isEmpty(matched.birth_date) && r.birth_date) changes.push('Tanggal Lahir');
         if (isEmpty(matched.father_name) && r.father_name) changes.push('Nama Ayah');
@@ -1732,13 +2015,22 @@ app.post('/api/students/execute-import', async (c) => {
       const r = rows[i];
       const val = validation[i];
 
+      // Normalize gender
+      let gVal = (r.gender || '').trim();
+      if (/^l(aki)?/i.test(gVal)) gVal = 'Laki-Laki';
+      else if (/^p(erempuan)?/i.test(gVal)) gVal = 'Perempuan';
+
       if (val.status === 'new') {
         // Insert Siswa Baru via Statement Batch
         batchStatements.push(
           db.prepare(`
-            INSERT INTO students (nipd, nisn, nik, name, class_name, birth_place, birth_date)
-            VALUES (?, ?, ?, ?, ?, ?, ?)
-          `).bind(r.nipd || null, r.nisn || null, r.nik || null, r.name, r.class_name || '', r.birth_place || null, r.birth_date || null)
+            INSERT INTO students (nipd, nisn, nik, name, class_name, gender, religion, entry_date, birth_place, birth_date)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+          `).bind(
+            r.nipd || null, r.nisn || null, r.nik || null, r.name, r.class_name || '',
+            gVal || null, r.religion || null, r.entry_date || null,
+            r.birth_place || null, r.birth_date || null
+          )
         );
 
         if (r.father_name || r.mother_name) {
@@ -1761,6 +2053,9 @@ app.post('/api/students/execute-import', async (c) => {
         if (val.changes.includes('NISN')) { studentUpdates.push('nisn = ?'); studentBinds.push(r.nisn); }
         if (val.changes.includes('NIK')) { studentUpdates.push('nik = ?'); studentBinds.push(r.nik); }
         if (val.changes.includes('Kelas')) { studentUpdates.push('class_name = ?'); studentBinds.push(r.class_name); }
+        if (val.changes.includes('Jenis Kelamin')) { studentUpdates.push('gender = ?'); studentBinds.push(gVal || null); }
+        if (val.changes.includes('Agama')) { studentUpdates.push('religion = ?'); studentBinds.push(r.religion || null); }
+        if (val.changes.includes('Tanggal Masuk')) { studentUpdates.push('entry_date = ?'); studentBinds.push(r.entry_date || null); }
         if (val.changes.includes('Tempat Lahir')) { studentUpdates.push('birth_place = ?'); studentBinds.push(r.birth_place); }
         if (val.changes.includes('Tanggal Lahir')) { studentUpdates.push('birth_date = ?'); studentBinds.push(r.birth_date); }
 
@@ -1796,7 +2091,6 @@ app.post('/api/students/execute-import', async (c) => {
 
     // Eksekusi seluruh transaksi secara instan dalam 1 batch tunggal ke Cloudflare D1
     if (batchStatements.length > 0) {
-      // Chunk per 100 statements jika data sangat banyak untuk keamanan batas D1
       const CHUNK_SIZE = 100;
       for (let i = 0; i < batchStatements.length; i += CHUNK_SIZE) {
         const chunk = batchStatements.slice(i, i + CHUNK_SIZE);
@@ -1841,7 +2135,7 @@ app.post('/api/students/validate-update-by-id', async (c) => {
     // Fetch existing students & parents by ID
     const existingRes = await db.prepare(`
       SELECT 
-        s.id, s.nipd, s.nisn, s.nik, s.name, s.class_name, s.birth_place, s.birth_date,
+        s.id, s.nipd, s.nisn, s.nik, s.name, s.class_name, s.gender, s.religion, s.entry_date, s.birth_place, s.birth_date,
         p.father_name, p.is_father_alive, p.mother_name, p.is_mother_alive
       FROM students s
       LEFT JOIN student_parents p ON s.id = p.student_id
@@ -1862,6 +2156,9 @@ app.post('/api/students/validate-update-by-id', async (c) => {
       nik: 'NIK',
       name: 'Nama Lengkap',
       class_name: 'Kelas',
+      gender: 'Jenis Kelamin',
+      religion: 'Agama',
+      entry_date: 'Tanggal Masuk',
       birth_place: 'Tempat Lahir',
       birth_date: 'Tanggal Lahir',
       father_name: 'Nama Ayah',
@@ -1957,7 +2254,7 @@ app.post('/api/students/execute-update-by-id', async (c) => {
     let updatedCount = 0;
     let skippedCount = 0;
 
-    const studentTableFields = ['nipd', 'nisn', 'nik', 'name', 'class_name', 'birth_place', 'birth_date'];
+    const studentTableFields = ['nipd', 'nisn', 'nik', 'name', 'class_name', 'gender', 'religion', 'entry_date', 'birth_place', 'birth_date'];
     const parentTableFields = ['father_name', 'is_father_alive', 'mother_name', 'is_mother_alive'];
 
     const activeStudentFields = selectedFields.filter(f => studentTableFields.includes(f));
@@ -3165,7 +3462,7 @@ app.get('/admin/print-cards', async (c) => {
 
   let query = `
     SELECT 
-      s.id, s.nipd, s.nisn, s.nik, s.name, s.class_name, s.photo_url, s.birth_place, s.birth_date, s.status,
+      s.id, s.nipd, s.nisn, s.nik, s.name, s.class_name, s.gender, s.photo_url, s.birth_place, s.birth_date, s.status,
       p.father_name, p.mother_name
     FROM students s
     LEFT JOIN student_parents p ON s.id = p.student_id
@@ -3217,7 +3514,7 @@ app.get('/admin/print-cards/student/:id', async (c) => {
 
   const student = await db.prepare(`
     SELECT 
-      s.id, s.nipd, s.nisn, s.nik, s.name, s.class_name, s.photo_url, s.birth_place, s.birth_date, s.status,
+      s.id, s.nipd, s.nisn, s.nik, s.name, s.class_name, s.gender, s.photo_url, s.birth_place, s.birth_date, s.status,
       p.father_name, p.mother_name
     FROM students s
     LEFT JOIN student_parents p ON s.id = p.student_id
@@ -3456,7 +3753,7 @@ app.post('/api/students/:id/parse-nik', async (c) => {
   }
 
   const student = await db.prepare(
-    'SELECT id, nipd, nisn, nik, name, class_name, birth_place, birth_date FROM students WHERE id = ?'
+    'SELECT id, nipd, nisn, nik, name, class_name, gender, religion, entry_date, birth_place, birth_date FROM students WHERE id = ?'
   ).bind(studentId).first<Student>();
 
   if (!student) {

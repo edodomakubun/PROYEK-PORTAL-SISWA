@@ -297,6 +297,34 @@ export function renderStudentListPage(
               </div>
             </div>
 
+            <div class="row">
+              <div class="col-md-4 mb-3">
+                <label class="form-label fw-semibold">Jenis Kelamin</label>
+                <select name="gender" class="form-select rounded-3">
+                  <option value="">-- Pilih --</option>
+                  <option value="Laki-Laki">Laki-Laki</option>
+                  <option value="Perempuan">Perempuan</option>
+                </select>
+              </div>
+              <div class="col-md-4 mb-3">
+                <label class="form-label fw-semibold">Agama</label>
+                <select name="religion" class="form-select rounded-3">
+                  <option value="">-- Pilih --</option>
+                  <option value="Islam">Islam</option>
+                  <option value="Kristen">Kristen</option>
+                  <option value="Katolik">Katolik</option>
+                  <option value="Hindu">Hindu</option>
+                  <option value="Buddha">Buddha</option>
+                  <option value="Khonghucu">Khonghucu</option>
+                  <option value="Lainnya">Lainnya</option>
+                </select>
+              </div>
+              <div class="col-md-4 mb-3">
+                <label class="form-label fw-semibold">Tanggal Masuk Sekolah</label>
+                <input type="text" name="entry_date" class="form-control rounded-3" placeholder="DD/MM/YYYY" />
+              </div>
+            </div>
+
             <hr class="my-4 text-muted" />
 
             <h6 class="fw-bold text-primary mb-3"><i class="bi bi-people me-1"></i> Data Orang Tua</h6>
@@ -668,6 +696,31 @@ export function renderStudentDetailPage(
             <div class="col-md-6">
               <label class="form-label small fw-semibold text-secondary">Tanggal Lahir</label>
               <input type="date" name="birth_date" class="form-control rounded-3" value="${formatIsoDate(student.birth_date)}" ${userRole === 'siswa' ? 'readonly' : ''} />
+            </div>
+            <div class="col-md-4">
+              <label class="form-label small fw-semibold text-secondary">Jenis Kelamin</label>
+              <select name="gender" class="form-select rounded-3" ${userRole === 'siswa' ? 'disabled' : ''}>
+                <option value="">-- Pilih --</option>
+                <option value="Laki-Laki" ${student.gender === 'Laki-Laki' ? 'selected' : ''}>Laki-Laki</option>
+                <option value="Perempuan" ${student.gender === 'Perempuan' ? 'selected' : ''}>Perempuan</option>
+              </select>
+            </div>
+            <div class="col-md-4">
+              <label class="form-label small fw-semibold text-secondary">Agama</label>
+              <select name="religion" class="form-select rounded-3" ${userRole === 'siswa' ? 'disabled' : ''}>
+                <option value="">-- Pilih --</option>
+                <option value="Islam" ${student.religion === 'Islam' ? 'selected' : ''}>Islam</option>
+                <option value="Kristen" ${student.religion === 'Kristen' ? 'selected' : ''}>Kristen</option>
+                <option value="Katolik" ${student.religion === 'Katolik' ? 'selected' : ''}>Katolik</option>
+                <option value="Hindu" ${student.religion === 'Hindu' ? 'selected' : ''}>Hindu</option>
+                <option value="Buddha" ${student.religion === 'Buddha' ? 'selected' : ''}>Buddha</option>
+                <option value="Khonghucu" ${student.religion === 'Khonghucu' ? 'selected' : ''}>Khonghucu</option>
+                <option value="Lainnya" ${student.religion === 'Lainnya' ? 'selected' : ''}>Lainnya</option>
+              </select>
+            </div>
+            <div class="col-md-4">
+              <label class="form-label small fw-semibold text-secondary">Tanggal Masuk Sekolah</label>
+              <input type="text" name="entry_date" class="form-control rounded-3" value="${student.entry_date || ''}" placeholder="DD/MM/YYYY" ${userRole === 'siswa' ? 'readonly' : ''} />
             </div>
           </div>
 

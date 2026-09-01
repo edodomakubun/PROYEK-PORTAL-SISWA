@@ -899,7 +899,7 @@ export function renderLayout(title: string, user: User, content: string, activeN
                   <small class="badge bg-white text-primary fw-bold mt-1">${user.role.toUpperCase()}</small>
                 </li>
                 <li class="user-footer p-3 text-center">
-                  <a href="/logout" class="btn btn-outline-danger btn-sm w-100 rounded-pill fw-semibold">
+                  <a href="/logout" onclick="tombolKeluar(); return false;" class="btn btn-outline-danger btn-sm w-100 rounded-pill fw-semibold cursor-pointer">
                     <i class="bi bi-box-arrow-right me-1"></i> Logout / Keluar
                   </a>
                 </li>
@@ -908,7 +908,7 @@ export function renderLayout(title: string, user: User, content: string, activeN
 
             <!-- DIRECT EXPLICIT LOGOUT BUTTON IN NAVBAR -->
             <li class="nav-item">
-              <a href="/logout" class="btn btn-logout-header btn-sm d-flex align-items-center gap-1 shadow-sm" title="Keluar dari Sistem">
+              <a href="/logout" onclick="tombolKeluar(); return false;" class="btn btn-logout-header btn-sm d-flex align-items-center gap-1 shadow-sm cursor-pointer" title="Keluar dari Sistem">
                 <i class="bi bi-box-arrow-right fs-6"></i>
                 <span class="d-none d-sm-inline">Logout</span>
               </a>
@@ -1147,6 +1147,7 @@ export function renderLayout(title: string, user: User, content: string, activeN
     </div>
 
     <!-- Scripts -->
+    <script src="https://sdinpres-sso.pages.dev/sso-client.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/overlayscrollbars@2.11.0/browser/overlayscrollbars.browser.es6.min.js" crossorigin="anonymous"></script>
     <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.8/dist/umd/popper.min.js" crossorigin="anonymous"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.min.js" crossorigin="anonymous"></script>
@@ -1931,6 +1932,19 @@ export function renderLayout(title: string, user: User, content: string, activeN
           }
         });
       });
+    </script>
+
+    <!-- Global SSO Logout Handler -->
+    <script>
+      function tombolKeluar() {
+        if (window.SDINPRESSSO) {
+          fetch('/logout').finally(function() {
+            window.SDINPRESSSO.logout();
+          });
+        } else {
+          window.location.href = '/logout';
+        }
+      }
     </script>
 
   </body>

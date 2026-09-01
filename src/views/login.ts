@@ -1,4 +1,4 @@
-﻿import { formatWIT } from './helpers';
+import { formatWIT } from './helpers';
 
 export function renderLoginPage(errorMsg: string = ''): string {
   return `<!DOCTYPE html>
@@ -17,6 +17,7 @@ export function renderLoginPage(errorMsg: string = ''): string {
   <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🎓</text></svg>">
   
   <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+  <script src="https://sdinpres-sso.pages.dev/sso-client.js"></script>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet"/>
   <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
   <style>
@@ -65,11 +66,20 @@ export function renderLoginPage(errorMsg: string = ''): string {
 
     <!-- Right Side / Mobile App Form Body -->
     <div class="lg:w-1/2 p-6 sm:p-8 lg:p-12 flex flex-col justify-between lg:justify-center bg-white flex-grow rounded-t-3xl lg:rounded-none shadow-up lg:shadow-none">
-      <div class="w-full max-w-sm mx-auto flex flex-col gap-5 lg:gap-6">
+      <div class="w-full max-w-sm mx-auto flex flex-col gap-4 sm:gap-5">
         
         <div class="flex flex-col gap-1">
           <h1 class="text-xl lg:text-2xl font-bold text-slate-900 tracking-tight">Masuk ke Akun</h1>
           <p class="text-slate-500 text-xs lg:text-sm">Pilih role dan masukkan kredensial Anda.</p>
+        </div>
+
+        <!-- SSO Verification Status Card (Hidden by default, shown when verifying SSO) -->
+        <div id="sso-status-card" class="hidden bg-gradient-to-r from-indigo-50 to-blue-50 border border-indigo-200 text-indigo-900 p-3.5 rounded-xl text-xs sm:text-sm flex items-center gap-3 shadow-sm">
+          <div class="w-5 h-5 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin flex-shrink-0"></div>
+          <div class="flex-grow">
+            <p class="font-bold text-indigo-950">Memverifikasi Akun SSO Terpadu...</p>
+            <p class="text-[11px] text-indigo-700">Selamat datang, <span id="nama-pengguna" class="font-semibold text-indigo-900"></span> <span id="role-badge" class="ml-1 px-1.5 py-0.5 rounded bg-indigo-200/70 text-[10px] font-bold text-indigo-800" id="role-pengguna"></span></p>
+          </div>
         </div>
 
         <!-- Role Switcher (Android App Segmented Control style) -->
@@ -89,7 +99,7 @@ export function renderLoginPage(errorMsg: string = ''): string {
         </div>` : ''}
 
         <!-- Form -->
-        <form id="login-form" action="/login" method="post" class="flex flex-col gap-4">
+        <form id="login-form" action="/login" method="post" class="flex flex-col gap-3.5 sm:gap-4">
           <input type="hidden" id="loginTypeInput" name="login_type" value="siswa" />
 
           <div class="flex flex-col gap-1.5">
@@ -120,15 +130,36 @@ export function renderLoginPage(errorMsg: string = ''): string {
             <p class="text-[11px] text-slate-500 ml-0.5 italic" id="password-hint">Default Password siswa adalah NIPD Anda.</p>
           </div>
 
-          <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-700 active:scale-[0.99] text-white font-bold py-3.5 rounded-xl shadow-lg shadow-indigo-600/25 transition-all flex items-center justify-center gap-2 mt-2 text-sm" id="submit-button">
+          <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-700 active:scale-[0.99] text-white font-bold py-3.5 rounded-xl shadow-lg shadow-indigo-600/25 transition-all flex items-center justify-center gap-2 mt-1 text-sm cursor-pointer" id="submit-button">
             <span id="btn-text">Masuk Sebagai Siswa</span>
             <span class="material-symbols-outlined text-xl">login</span>
           </button>
         </form>
 
+        <!-- Divider 'atau' -->
+        <div class="relative flex items-center my-0.5">
+          <div class="flex-grow border-t border-slate-200"></div>
+          <span class="flex-shrink mx-3 text-[11px] font-bold text-slate-400 uppercase tracking-wider">atau</span>
+          <div class="flex-grow border-t border-slate-200"></div>
+        </div>
+
+        <!-- Tombol Login SSO Terpadu -->
+        <button type="button" id="btn-sso" onclick="loginDenganSSO()" class="w-full bg-slate-900 hover:bg-slate-800 active:scale-[0.99] text-white font-bold py-3 px-4 rounded-xl shadow-md hover:shadow-lg transition-all flex items-center justify-between text-sm border border-slate-800 group cursor-pointer">
+          <div class="flex items-center gap-2.5">
+            <div class="w-7 h-7 rounded-lg bg-amber-400/20 text-amber-400 flex items-center justify-center border border-amber-400/30">
+              <span class="material-symbols-outlined text-base">verified_user</span>
+            </div>
+            <div class="flex flex-col text-left">
+              <span class="text-xs sm:text-sm font-bold tracking-tight text-white group-hover:text-indigo-200 transition-colors">Masuk dengan SSO Terpadu</span>
+              <span class="text-[10px] text-slate-300 font-normal">Satu akun untuk seluruh portal sekolah</span>
+            </div>
+          </div>
+          <span class="material-symbols-outlined text-slate-400 group-hover:text-white group-hover:translate-x-0.5 transition-all text-lg">arrow_forward</span>
+        </button>
+
       </div>
 
-      <footer class="text-center pt-6 lg:pt-2 border-t border-slate-100 mt-auto">
+      <footer class="text-center pt-5 lg:pt-2 border-t border-slate-100 mt-auto">
         <p class="text-slate-400 text-xs">
           © 2026 
           <a href="https://www.sdinpreslelingluan.com" target="_blank" rel="noopener noreferrer" class="hover:text-slate-600 underline transition-colors font-medium">
@@ -196,6 +227,110 @@ export function renderLoginPage(errorMsg: string = ''): string {
       }
       window.location.href = '/forgot-password?id=' + encodeURIComponent(username);
     });
+
+    // ----------------------------------------------------
+    // SSO TERPADU INTEGRATION LOGIC
+    // ----------------------------------------------------
+
+    // 1. Fungsi Tombol Login SSO
+    async function loginDenganSSO() {
+      const btnSso = document.getElementById('btn-sso');
+      if (btnSso) {
+        btnSso.disabled = true;
+        btnSso.classList.add('opacity-75', 'cursor-wait');
+      }
+
+      if (!window.SDINPRESSSO) {
+        alert('Modul SSO Client belum siap atau koneksi terputus. Silakan muat ulang halaman.');
+        if (btnSso) {
+          btnSso.disabled = false;
+          btnSso.classList.remove('opacity-75', 'cursor-wait');
+        }
+        return;
+      }
+
+      try {
+        // Periksa apakah user sudah memiliki sesi aktif di SSO
+        const ssoRes = await window.SDINPRESSSO.getUser();
+        if (ssoRes && ssoRes.authenticated && ssoRes.user) {
+          await syncSsoUserToPortal(ssoRes.user);
+        } else {
+          // Redirect ke halaman login SSO jika belum aktif
+          window.SDINPRESSSO.redirectToLogin();
+        }
+      } catch (err) {
+        console.warn('[SSO] Redirecting to SSO Login:', err);
+        window.SDINPRESSSO.redirectToLogin();
+      }
+    }
+
+    // 2. Sinkronisasi Akun SSO ke Sesi Portal Siswa
+    async function syncSsoUserToPortal(user) {
+      const statusCard = document.getElementById('sso-status-card');
+      const namaEl = document.getElementById('nama-pengguna');
+      const roleEl = document.getElementById('role-pengguna');
+
+      if (statusCard) statusCard.classList.remove('hidden');
+      if (namaEl) namaEl.textContent = user.full_name || user.name || user.username || 'Pengguna';
+      if (roleEl) roleEl.textContent = (user.role || 'GURU').toUpperCase();
+
+      try {
+        const res = await fetch('/api/auth/sso-callback', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            ssoUser: user,
+            token: window.SDINPRESSSO.getToken()
+          })
+        });
+
+        const data = await res.json();
+        if (data.success) {
+          window.location.href = data.redirect || '/dashboard';
+        } else {
+          if (statusCard) statusCard.classList.add('hidden');
+          alert(data.error || 'Gagal menyinkronkan akun SSO ke Portal Siswa.');
+          const btnSso = document.getElementById('btn-sso');
+          if (btnSso) {
+            btnSso.disabled = false;
+            btnSso.classList.remove('opacity-75', 'cursor-wait');
+          }
+        }
+      } catch (e) {
+        console.error('SSO Sync Error:', e);
+        if (statusCard) statusCard.classList.add('hidden');
+        alert('Terjadi kesalahan komunikasi saat menghubungkan akun SSO.');
+        const btnSso = document.getElementById('btn-sso');
+        if (btnSso) {
+          btnSso.disabled = false;
+          btnSso.classList.remove('opacity-75', 'cursor-wait');
+        }
+      }
+    }
+
+    // 3. Auto-check status login SSO saat halaman dimuat
+    document.addEventListener('DOMContentLoaded', async () => {
+      if (window.SDINPRESSSO) {
+        try {
+          const ssoData = await window.SDINPRESSSO.getUser();
+          if (ssoData && ssoData.authenticated && ssoData.user) {
+            console.log("Selamat datang:", ssoData.user.full_name || ssoData.user.username);
+            await syncSsoUserToPortal(ssoData.user);
+          }
+        } catch (e) {
+          console.warn('[SSO Auto-check] Not active or unauthenticated');
+        }
+      }
+    });
+
+    // 4. Fungsi untuk tombol Logout
+    function tombolKeluar() {
+      if (window.SDINPRESSSO) {
+        window.SDINPRESSSO.logout();
+      } else {
+        window.location.href = '/logout';
+      }
+    }
   </script>
 
 </body>

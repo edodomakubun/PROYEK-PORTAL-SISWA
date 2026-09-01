@@ -1,4 +1,4 @@
-﻿import { DEFAULT_AVATAR, formatIndonesianDate } from './helpers';
+import { DEFAULT_AVATAR, formatIndonesianDate } from './helpers';
 
 export function renderPrintCardsPage(
   students: any[],
@@ -35,6 +35,11 @@ export function renderPrintCardsPage(
       const fatherName = (s.father_name || '').trim() || '-';
       const motherName = (s.mother_name || '').trim() || '-';
 
+      let genderVal = (s.gender || '').trim();
+      if (/^l(aki)?/i.test(genderVal)) genderVal = 'Laki-Laki';
+      else if (/^p(erempuan)?/i.test(genderVal)) genderVal = 'Perempuan';
+      else genderVal = genderVal || '-';
+
       return `
       <div class="card-pair">
         <!-- TAMPAK DEPAN (DESAIN LAMA - SAMA PERSIS) -->
@@ -55,6 +60,7 @@ export function renderPrintCardsPage(
                 <div class="info-row"><span class="lbl">NIPD</span><span class="sep">:</span><span class="val">${s.nipd || '-'}</span></div>
                 <div class="info-row"><span class="lbl">NISN</span><span class="sep">:</span><span class="val">${s.nisn || '-'}</span></div>
                 <div class="info-row"><span class="lbl">NIK</span><span class="sep">:</span><span class="val">${s.nik || '-'}</span></div>
+                <div class="info-row"><span class="lbl">JK</span><span class="sep">:</span><span class="val">${genderVal}</span></div>
               </div>
             </div>
           </div>
@@ -72,10 +78,10 @@ export function renderPrintCardsPage(
           </div>
           <div class="card-body-content-back">
             <div class="back-details">
-              <!-- A. TEMPAT, TANGGAL LAHIR -->
+              <!-- A. TEMPAT, TANGGAL LAHIR & JK -->
               <div class="back-section">
-                <div class="back-section-title">TEMPAT, TANGGAL LAHIR</div>
-                <div class="back-section-val" title="${ttlText}">${ttlText}</div>
+                <div class="back-section-title">TEMPAT, TGL LAHIR / JK</div>
+                <div class="back-section-val" title="${ttlText} (${genderVal})">${ttlText} (${genderVal})</div>
               </div>
 
               <div class="back-divider"></div>

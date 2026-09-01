@@ -278,6 +278,153 @@ export async function loginUser(c: Context<{ Bindings: Env; Variables: HonoVaria
   return userObj;
 }
 
+export async function loginUserBySso(
+  c: Context<{ Bindings: Env; Variables: HonoVariables }>,
+  ssoUser: {
+    id?: string | number;
+    username?: string;
+    full_name?: string;
+    name?: string;
+    role?: string;
+    email?: string;
+    avatar_url?: string;
+    [key: string]: any;
+  }
+): Promise<User | null> {
+  const db = c.env.DB;
+  const ip = getClientIp(c);
+  const ua = getUserAgent(c);
+
+  const identifier = String(ssoUser.username || ssoUser.id || ssoUser.nip || ssoUser.email || '').trim();
+  if (!identifier) {
+    return null;
+  }
+
+  let rawUser: any = null;
+  if (db) {
+    // 1. Try querying by id
+    try {
+      rawUser = await db.prepare('SELECT * FROM users WHERE id = ?').bind(identifier).first<any>();
+    } catch (err) {
+      console.error('Error querying users by id for SSO:', err);
+    }
+
+    // 2. Fallback querying by username
+    if (!rawUser) {
+      try {
+        rawUser = await db.prepare('SELECT * FROM users WHERE username = ?').bind(identifier).first<any>();
+      } catch (err) {}
+    }
+
+    // 3. Fallback for students by nipd or nisn
+    if (!rawUser) {
+      try {
+        const student = await db.prepare('SELECT * FROM students WHERE nipd = ? OR nisn = ?').bind(identifier, identifier).first<any>();
+        if (student) {
+          rawUser = {
+            id: student.nipd || identifier,
+            role: 'siswa',
+            is_active: 1,
+            linked_id: student.id
+          };
+        }
+      } catch (err) {}
+    }
+  }
+
+  // Role mapping: 'teacher' / 'guru' -> 'guru', 'admin' -> 'admin', 'siswa' -> 'siswa'
+  let role: Role = 'guru';
+  const rawRole = String(rawUser?.role || ssoUser.role || '').toLowerCase();
+  if (rawRole === 'admin' || rawRole === 'administrator' || rawRole === 'ops') role = 'admin';
+  else if (rawRole === 'siswa' || rawRole === 'student') role = 'siswa';
+  else role = 'guru';
+
+  const userId = String(rawUser?.id || ssoUser.id || identifier);
+  let fullName = String(ssoUser.full_name || ssoUser.name || rawUser?.id || identifier);
+  let avatarUrl: string | null = ssoUser.avatar_url || null;
+  let linkedId: number | null = rawUser?.linked_id ? Number(rawUser.linked_id) : null;
+  let homeroomClass: string | null = rawUser?.homeroom_class || null;
+  let isDocReviewer: number = rawUser?.is_document_reviewer ? Number(rawUser.is_document_reviewer) : (role === 'admin' ? 1 : 0);
+
+  if (db) {
+    if (role === 'guru' || role === 'admin') {
+      try {
+        const tp = await db.prepare('SELECT full_name, avatar_url FROM teacher_profiles WHERE user_id = ?').bind(userId).first<{ full_name: string; avatar_url: string | null }>();
+        if (tp) {
+          if (tp.full_name) fullName = tp.full_name;
+          if (tp.avatar_url) {
+            avatarUrl = tp.avatar_url.startsWith('http') || tp.avatar_url.startsWith('/files/')
+              ? tp.avatar_url
+              : `/files/${tp.avatar_url.replace(/^\/+/, '')}`;
+          }
+        }
+      } catch (e) { }
+    } else if (role === 'siswa') {
+      try {
+        const st = await db.prepare('SELECT id, name, photo_url FROM students WHERE nipd = ?').bind(userId).first<{ id: number; name: string; photo_url: string | null }>();
+        if (st) {
+          linkedId = st.id;
+          if (st.name) fullName = st.name;
+          if (st.photo_url) {
+            avatarUrl = st.photo_url.startsWith('http') || st.photo_url.startsWith('/files/')
+              ? st.photo_url
+              : `/files/${st.photo_url.replace(/^\/+/, '')}`;
+          }
+        }
+      } catch (e) { }
+    }
+  }
+
+  const userObj: User = {
+    id: userId,
+    username: identifier,
+    full_name: fullName,
+    avatar_url: avatarUrl,
+    role: role,
+    is_active: rawUser?.is_active ?? 1,
+    linked_id: linkedId,
+    homeroom_class: homeroomClass,
+    is_document_reviewer: isDocReviewer
+  };
+
+  // Log successful login & update active session
+  if (db) {
+    await logAudit(db, {
+      userId: userObj.id,
+      userName: userObj.full_name || userObj.username,
+      userRole: userObj.role,
+      action: 'LOGIN_SSO_SUCCESS',
+      status: 'SUCCESS',
+      ipAddress: ip,
+      userAgent: ua,
+      details: `Pengguna berhasil login via SSO Terpadu sebagai ${userObj.role.toUpperCase()}`
+    });
+
+    await updateActiveSession(db, {
+      userId: userObj.id,
+      userName: userObj.full_name || userObj.username,
+      userRole: userObj.role,
+      avatarUrl: userObj.avatar_url,
+      ipAddress: ip
+    });
+  }
+
+  // Set session cookie (20 Menit = 1200 detik)
+  const sessionUser = {
+    ...userObj,
+    last_active: Date.now()
+  };
+
+  setCookie(c, COOKIE_NAME, safeBase64Encode(JSON.stringify(sessionUser)), {
+    path: '/',
+    httpOnly: true,
+    secure: false,
+    maxAge: 1200
+  });
+
+  return userObj;
+}
+
 export function getCurrentUser(c: Context<{ Bindings: Env; Variables: HonoVariables }>): User | null {
   const cookie = getCookie(c, COOKIE_NAME);
   if (!cookie) return null;

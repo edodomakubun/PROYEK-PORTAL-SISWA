@@ -1,4 +1,4 @@
-﻿import { User } from '../types';
+import { User } from '../types';
 import { renderLayout } from './layout';
 
 export function renderAdminSettingsPage(
@@ -194,6 +194,50 @@ export function renderAdminSettingsPage(
                 <button type="submit" class="btn btn-primary btn-lg rounded-pill px-5 fw-bold shadow-sm">
                   <i class="bi bi-save2-fill me-2"></i> Simpan Perubahan Setelan
                 </button>
+              </div>
+            </form>
+          </div>
+        </div>
+
+        <!-- Section 3: Kelola Template SK Mutasi Siswa (.docx) -->
+        <div class="card border-0 shadow-sm rounded-4 mb-4">
+          <div class="card-header bg-white border-bottom py-3 d-flex justify-content-between align-items-center">
+            <h5 class="card-title fw-bold text-dark mb-0 d-flex align-items-center gap-2">
+              <i class="bi bi-file-earmark-word-fill text-success fs-4"></i> Kelola Template SK Mutasi Siswa (.docx)
+            </h5>
+            <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 px-3 py-1.5 rounded-pill fw-semibold">
+              Template MS Word
+            </span>
+          </div>
+          <div class="card-body p-4">
+            <div class="alert alert-success bg-success bg-opacity-10 border border-success border-opacity-25 py-3 px-4 rounded-4 mb-4">
+              <div class="d-flex gap-3 align-items-center">
+                <i class="bi bi-info-circle-fill fs-2 text-success"></i>
+                <div>
+                  <h6 class="fw-bold mb-1 text-success">Format Template SK Surat_Keterangan_Pindah_Sekolah.docx</h6>
+                  <p class="mb-0 small text-secondary">
+                    Unggah file template <code>Surat_Keterangan_Pindah_Sekolah.docx</code> kustom untuk dipakai saat tombol Download SK diklik.
+                    Jika tidak diunggah, sistem akan menggunakan template bawaan resmi.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <form action="/api/admin/settings/upload-sk-template" method="POST" enctype="multipart/form-data">
+              <div class="row align-items-end g-3">
+                <div class="col-md-7">
+                  <label class="form-label fw-bold text-dark mb-1">Unggah Template SK Baru (.docx)</label>
+                  <input type="file" name="sk_template" class="form-control rounded-3" accept=".docx" required />
+                  <div class="form-text small">Hanya menerima berkas Microsoft Word (.docx).</div>
+                </div>
+                <div class="col-md-5 d-flex gap-2 justify-content-end">
+                  <a href="/api/admin/settings/download-sk-template" target="_blank" class="btn btn-outline-secondary rounded-pill px-3 fw-semibold">
+                    <i class="bi bi-download me-1"></i> Download Template Aktif
+                  </a>
+                  <button type="submit" class="btn btn-success rounded-pill px-4 fw-bold shadow-sm">
+                    <i class="bi bi-cloud-upload-fill me-1"></i> Upload Template
+                  </button>
+                </div>
               </div>
             </form>
           </div>

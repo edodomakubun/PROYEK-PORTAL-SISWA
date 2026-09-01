@@ -10,7 +10,9 @@
     "db:init:prod": "wrangler d1 execute portal-guru-db --remote --file=./schema.sql"
   },
   "dependencies": {
+    "docxtemplater": "^3.69.3",
     "hono": "^4.7.0",
+    "pizzip": "^3.2.0",
     "xlsx": "^0.18.5"
   },
   "devDependencies": {

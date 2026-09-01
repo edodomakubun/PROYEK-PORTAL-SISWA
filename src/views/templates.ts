@@ -49,3 +49,4 @@ export { renderDocumentSubmissionsPage } from './document-submissions';
 export { renderHomeroomManagementPage } from './homeroom';
 export { renderGuidePage } from './guide';
 export { renderErrorPage } from './error';
+export { renderSKMutasiPrintPage } from './sk-mutasi';

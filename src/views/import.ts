@@ -129,6 +129,24 @@ export function renderImportPage(userRole: Role): string {
             <label class="form-check-label fw-semibold text-dark small" for="chk_is_mother_alive">Status Ibu</label>
           </div>
         </div>
+        <div class="col-6 col-sm-4 col-md-3">
+          <div class="form-check form-switch p-2 bg-light rounded-3 border">
+            <input class="form-check-input field-chk ms-0 me-2" type="checkbox" value="gender" id="chk_gender" checked>
+            <label class="form-check-label fw-semibold text-dark small" for="chk_gender">Jenis Kelamin</label>
+          </div>
+        </div>
+        <div class="col-6 col-sm-4 col-md-3">
+          <div class="form-check form-switch p-2 bg-light rounded-3 border">
+            <input class="form-check-input field-chk ms-0 me-2" type="checkbox" value="religion" id="chk_religion" checked>
+            <label class="form-check-label fw-semibold text-dark small" for="chk_religion">Agama</label>
+          </div>
+        </div>
+        <div class="col-6 col-sm-4 col-md-3">
+          <div class="form-check form-switch p-2 bg-light rounded-3 border">
+            <input class="form-check-input field-chk ms-0 me-2" type="checkbox" value="entry_date" id="chk_entry_date" checked>
+            <label class="form-check-label fw-semibold text-dark small" for="chk_entry_date">Tanggal Masuk</label>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -175,6 +193,9 @@ export function renderImportPage(userRole: Role): string {
                 <th>NIK</th>
                 <th>Nama Lengkap</th>
                 <th>Kelas</th>
+                <th>JK</th>
+                <th>Agama</th>
+                <th>Tgl Masuk</th>
                 <th>Tempat Lahir</th>
                 <th>Tanggal Lahir</th>
                 <th>Nama Ayah</th>
@@ -182,7 +203,7 @@ export function renderImportPage(userRole: Role): string {
               </tr>
             </thead>
             <tbody id="previewTbody">
-              <tr><td colspan="12" class="text-center text-muted py-4">Pilih file Excel terlebih dahulu.</td></tr>
+              <tr><td colspan="15" class="text-center text-muted py-4">Pilih file Excel terlebih dahulu.</td></tr>
             </tbody>
           </table>
         </div>
@@ -231,8 +252,33 @@ export function renderImportPage(userRole: Role): string {
                   <input type="text" id="edit_row_birth_place" class="form-control rounded-3" />
                 </div>
                 <div class="col-md-4">
-                  <label class="form-label small fw-semibold text-dark">Tanggal Lahir (DD-MM-YYYY)</label>
-                  <input type="text" id="edit_row_birth_date" class="form-control rounded-3" placeholder="DD-MM-YYYY" />
+                  <label class="form-label small fw-semibold text-dark">Tanggal Lahir (DD/MM/YYYY)</label>
+                  <input type="text" id="edit_row_birth_date" class="form-control rounded-3" placeholder="DD/MM/YYYY" />
+                </div>
+                <div class="col-md-4">
+                  <label class="form-label small fw-semibold text-dark">Jenis Kelamin</label>
+                  <select id="edit_row_gender" class="form-select rounded-3">
+                    <option value="">-- Pilih --</option>
+                    <option value="Laki-Laki">Laki-Laki</option>
+                    <option value="Perempuan">Perempuan</option>
+                  </select>
+                </div>
+                <div class="col-md-4">
+                  <label class="form-label small fw-semibold text-dark">Agama</label>
+                  <select id="edit_row_religion" class="form-select rounded-3">
+                    <option value="">-- Pilih --</option>
+                    <option value="Islam">Islam</option>
+                    <option value="Kristen">Kristen</option>
+                    <option value="Katolik">Katolik</option>
+                    <option value="Hindu">Hindu</option>
+                    <option value="Buddha">Buddha</option>
+                    <option value="Khonghucu">Khonghucu</option>
+                    <option value="Lainnya">Lainnya</option>
+                  </select>
+                </div>
+                <div class="col-md-4">
+                  <label class="form-label small fw-semibold text-dark">Tanggal Masuk (DD/MM/YYYY)</label>
+                  <input type="text" id="edit_row_entry_date" class="form-control rounded-3" placeholder="DD/MM/YYYY" />
                 </div>
                 <div class="col-md-6">
                   <label class="form-label small fw-semibold text-dark">Nama Ayah</label>
@@ -383,6 +429,9 @@ export function renderImportPage(userRole: Role): string {
                         if (val === 'nik') colMap['nik'] = idx;
                         if (val === 'nama' || val === 'nama lengkap' || val === 'nama siswa') colMap['name'] = idx;
                         if (val === 'kelas' || val === 'class' || val === 'rombel') colMap['class_name'] = idx;
+                        if (val === 'jenis kelamin' || val === 'jk' || val === 'gender' || val === 'jenis_kelamin') colMap['gender'] = idx;
+                        if (val === 'agama' || val === 'religion') colMap['religion'] = idx;
+                        if (val === 'tanggal masuk' || val === 'tgl masuk' || val === 'tgl. masuk' || val === 'tanggal_masuk' || val === 'entry_date' || val === 'tgl_masuk') colMap['entry_date'] = idx;
                         if (val === 'tempat lahir' || val === 'tmp lahir' || val === 'tmp. lahir') colMap['birth_place'] = idx;
                         if (val === 'tanggal lahir' || val === 'tgl lahir' || val === 'tgl. lahir') colMap['birth_date'] = idx;
                         if (val === 'nama ayah' || val === 'ayah') colMap['father_name'] = idx;
@@ -401,6 +450,9 @@ export function renderImportPage(userRole: Role): string {
                         if (val === 'nik') colMap['nik'] = idx;
                         if (val === 'nama' || val === 'nama lengkap' || val === 'nama siswa') colMap['name'] = idx;
                         if (val === 'kelas' || val === 'class' || val === 'rombel') colMap['class_name'] = idx;
+                        if (val === 'jenis kelamin' || val === 'jk' || val === 'gender' || val === 'jenis_kelamin') colMap['gender'] = idx;
+                        if (val === 'agama' || val === 'religion') colMap['religion'] = idx;
+                        if (val === 'tanggal masuk' || val === 'tgl masuk' || val === 'tgl. masuk' || val === 'tanggal_masuk' || val === 'entry_date' || val === 'tgl_masuk') colMap['entry_date'] = idx;
                         if (val === 'tempat lahir' || val === 'tmp lahir' || val === 'tmp. lahir') colMap['birth_place'] = idx;
                         if (val === 'tanggal lahir' || val === 'tgl lahir' || val === 'tgl. lahir') colMap['birth_date'] = idx;
                         if (val === 'nama ayah' || val === 'ayah') colMap['father_name'] = idx;
@@ -411,37 +463,84 @@ export function renderImportPage(userRole: Role): string {
                   }
                 }
 
-                const clean = (row, idx) => {
-                  if (idx === undefined) return null;
-                  let v = String(row[idx] || '').trim();
-                  if (v.includes('E+') || v.includes('e+')) {
-                    try { v = BigInt(Math.round(Number(v))).toString(); } catch (err) { }
+                const cleanRaw = (row, idx) => {
+                  if (idx === undefined || idx === null) return null;
+                  const v = row[idx];
+                  if (v === undefined || v === null || v === '' || v === '-') return null;
+                  if (typeof v === 'string') {
+                    let s = v.trim();
+                    if (s.includes('E+') || s.includes('e+')) {
+                      try { s = BigInt(Math.round(Number(s))).toString(); } catch (err) { }
+                    }
+                    return (s === '' || s === '-') ? null : s;
                   }
-                  return (v === '' || v === '-') ? null : v;
+                  return v;
                 };
 
-                const formatDDMMYYYY = (val) => {
+                const clean = (row, idx) => {
+                  const raw = cleanRaw(row, idx);
+                  if (raw === null || raw === undefined) return null;
+                  return String(raw).trim();
+                };
+
+                const cleanGender = (val) => {
                   if (!val) return null;
+                  const str = String(val).trim();
+                  if (/^l(aki)?/i.test(str)) return 'Laki-Laki';
+                  if (/^p(erempuan)?/i.test(str)) return 'Perempuan';
+                  return str;
+                };
+
+                const formatDDMMYYYYSlash = (val) => {
+                  if (val === null || val === undefined) return null;
+
+                  // 1. JS Date object from SheetJS
+                  if (val instanceof Date) {
+                    if (isNaN(val.getTime())) return null;
+                    const d = String(val.getUTCDate()).padStart(2, '0');
+                    const m = String(val.getUTCMonth() + 1).padStart(2, '0');
+                    const y = String(val.getUTCFullYear());
+                    return d + '/' + m + '/' + y;
+                  }
+
+                  // 2. Excel serial date code (e.g. 45147 or "45147")
+                  if (typeof val === 'number' || (typeof val === 'string' && /^([0-9]{4,5})(\.[0-9]+)?$/.test(val.trim()))) {
+                    const num = Number(val);
+                    if (!isNaN(num) && num >= 1000 && num <= 100000) {
+                      if (typeof XLSX !== 'undefined' && XLSX.SSF && XLSX.SSF.parse_date_code) {
+                        try {
+                          const parsed = XLSX.SSF.parse_date_code(num);
+                          if (parsed && parsed.y && parsed.m && parsed.d) {
+                            const d = String(parsed.d).padStart(2, '0');
+                            const m = String(parsed.m).padStart(2, '0');
+                            const y = String(parsed.y);
+                            return d + '/' + m + '/' + y;
+                          }
+                        } catch(err) {}
+                      }
+                    }
+                  }
+
                   const str = String(val).trim();
                   if (!str || str === '-') return null;
 
-                  if (/^\\d{2}-\\d{2}-\\d{4}$/.test(str)) return str;
+                  // 3. Match DD/MM/YYYY or DD-MM-YYYY (Indonesian format: Day first)
+                  const dmy = str.match(/^([0-9]{1,2})[-/]([0-9]{1,2})[-/]([0-9]{4})$/);
+                  if (dmy) {
+                    const d = dmy[1].padStart(2, '0');
+                    const m = dmy[2].padStart(2, '0');
+                    const y = dmy[3];
+                    return d + '/' + m + '/' + y;
+                  }
 
-                  const iso = str.match(/^(\\d{4})[-/](\\d{1,2})[-/](\\d{1,2})/);
-                  if (iso) return \`\${iso[3].padStart(2, '0')}-\${iso[2].padStart(2, '0')}-\${iso[1]}\`;
-
-                  const slash = str.match(/^(\\d{1,2})[/](\\d{1,2})[/](\\d{4})/);
-                  if (slash) return \`\${slash[1].padStart(2, '0')}-\${slash[2].padStart(2, '0')}-\${slash[3]}\`;
-
-                  try {
-                    const d = new Date(str);
-                    if (!isNaN(d.getTime())) {
-                      const day = String(d.getDate()).padStart(2, '0');
-                      const month = String(d.getMonth() + 1).padStart(2, '0');
-                      const year = d.getFullYear();
-                      return \`\${day}-\${month}-\${year}\`;
-                    }
-                  } catch(e) {}
+                  // 4. Match YYYY-MM-DD or YYYY/MM/DD (ISO format)
+                  const ymd = str.match(/^([0-9]{4})[-/]([0-9]{1,2})[-/]([0-9]{1,2})/);
+                  if (ymd) {
+                    const y = ymd[1];
+                    const m = ymd[2].padStart(2, '0');
+                    const d = ymd[3].padStart(2, '0');
+                    return d + '/' + m + '/' + y;
+                  }
 
                   return str;
                 };
@@ -462,8 +561,11 @@ export function renderImportPage(userRole: Role): string {
                         nik: clean(row, colMap['nik']),
                         name: clean(row, colMap['name']) || '',
                         class_name: clean(row, colMap['class_name']) || '',
+                        gender: cleanGender(clean(row, colMap['gender'])),
+                        religion: clean(row, colMap['religion']),
+                        entry_date: formatDDMMYYYYSlash(cleanRaw(row, colMap['entry_date'])),
                         birth_place: clean(row, colMap['birth_place']),
-                        birth_date: formatDDMMYYYY(clean(row, colMap['birth_date'])),
+                        birth_date: formatDDMMYYYYSlash(cleanRaw(row, colMap['birth_date'])),
                         father_name: clean(row, colMap['father_name']),
                         is_father_alive: clean(row, colMap['is_father_alive']),
                         mother_name: clean(row, colMap['mother_name']),
@@ -479,8 +581,11 @@ export function renderImportPage(userRole: Role): string {
                         nik: clean(row, colMap['nik']),
                         name: name,
                         class_name: clean(row, colMap['class_name']) || '',
+                        gender: cleanGender(clean(row, colMap['gender'])),
+                        religion: clean(row, colMap['religion']),
+                        entry_date: formatDDMMYYYYSlash(cleanRaw(row, colMap['entry_date'])),
                         birth_place: clean(row, colMap['birth_place']),
-                        birth_date: formatDDMMYYYY(clean(row, colMap['birth_date'])),
+                        birth_date: formatDDMMYYYYSlash(cleanRaw(row, colMap['birth_date'])),
                         father_name: clean(row, colMap['father_name']),
                         mother_name: clean(row, colMap['mother_name'])
                       });
@@ -493,7 +598,7 @@ export function renderImportPage(userRole: Role): string {
                 const errMsg = currentMode === 'update_id'
                   ? 'Tidak ada baris dengan kolom ID Student yang valid pada file Excel tersebut.'
                   : 'Tidak ada data siswa yang valid ditemukan pada file Excel tersebut.';
-                alertArea.innerHTML = \`<div class="alert alert-danger rounded-4">\${errMsg}</div>\`;
+                alertArea.innerHTML = '<div class="alert alert-danger rounded-4">' + errMsg + '</div>';
                 previewCard.classList.add('d-none');
                 return;
               }
@@ -518,17 +623,16 @@ export function renderImportPage(userRole: Role): string {
           let displayedCount = 0;
 
           if (currentMode === 'update_id') {
-            previewThead.innerHTML = \`
-              <tr>
-                <th style="width: 50px;">No</th>
-                <th style="width: 70px;" class="text-center">Aksi</th>
-                <th style="width: 100px;">ID Siswa</th>
-                <th>Status Matching</th>
-                <th>Nama Siswa di DB</th>
-                <th>Nama di Excel</th>
-                <th>Nilai Kolom yang Akan Di-Update</th>
-              </tr>
-            \`;
+            previewThead.innerHTML = 
+              '<tr>' +
+                '<th style="width: 50px;">No</th>' +
+                '<th style="width: 70px;" class="text-center">Aksi</th>' +
+                '<th style="width: 100px;">ID Siswa</th>' +
+                '<th>Status Matching</th>' +
+                '<th>Nama Siswa di DB</th>' +
+                '<th>Nama di Excel</th>' +
+                '<th>Nilai Kolom yang Akan Di-Update</th>' +
+              '</tr>';
 
             rows.forEach((r, idx) => {
               let statusBadge = '<span class="badge bg-secondary bg-opacity-10 text-secondary border rounded-pill">Belum Divalidasi</span>';
@@ -544,57 +648,57 @@ export function renderImportPage(userRole: Role): string {
                 }
 
                 statusBadge = '<span class="badge bg-warning bg-opacity-10 text-dark border border-warning rounded-pill"><i class="bi bi-pencil-fill me-1"></i> Ada Perubahan</span>';
-                matchedName = v.matchedName + (v.matchedClass ? \` (\${v.matchedClass})\` : '');
-                updateSummary = v.changes.map(c => \`<span class="badge bg-light text-dark border me-1 mb-1">\${c.label}: \${c.newValue}</span>\`).join(' ');
+                matchedName = v.matchedName + (v.matchedClass ? ' (' + v.matchedClass + ')' : '');
+                updateSummary = v.changes.map(c => '<span class="badge bg-light text-dark border me-1 mb-1">' + c.label + ': ' + c.newValue + '</span>').join(' ');
               }
 
               displayedCount++;
               const tr = document.createElement('tr');
-              tr.innerHTML = \`
-                <td class="text-secondary fw-semibold">\${displayedCount}</td>
-                <td class="text-center">
-                  <button type="button" class="btn btn-sm btn-outline-warning rounded-pill px-2 py-0 btn-edit-row" data-idx="\${idx}" title="Edit Baris Ini">
-                    <i class="bi bi-pencil-square"></i>
-                  </button>
-                </td>
-                <td><span class="badge bg-dark rounded-pill px-3">#\${r.id}</span></td>
-                <td>\${statusBadge}</td>
-                <td class="fw-bold text-dark">\${matchedName}</td>
-                <td>\${r.name || '-'}</td>
-                <td>\${updateSummary}</td>
-              \`;
+              tr.innerHTML = 
+                '<td class="text-secondary fw-semibold">' + displayedCount + '</td>' +
+                '<td class="text-center">' +
+                  '<button type="button" class="btn btn-sm btn-outline-warning rounded-pill px-2 py-0 btn-edit-row" data-idx="' + idx + '" title="Edit Baris Ini">' +
+                    '<i class="bi bi-pencil-square"></i>' +
+                  '</button>' +
+                '</td>' +
+                '<td><span class="badge bg-dark rounded-pill px-3">#' + r.id + '</span></td>' +
+                '<td>' + statusBadge + '</td>' +
+                '<td class="fw-bold text-dark">' + matchedName + '</td>' +
+                '<td>' + (r.name || '-') + '</td>' +
+                '<td>' + updateSummary + '</td>';
               previewTbody.appendChild(tr);
             });
 
             if (validatedItems && displayedCount === 0) {
-              previewTbody.innerHTML = \`
-                <tr>
-                  <td colspan="7" class="text-center text-muted py-4">
-                    <i class="bi bi-shield-check text-success fs-3 d-block mb-2"></i>
-                    <strong>Seluruh data pada Excel cocok & sama persis dengan database!</strong><br/>
-                    <span class="small">Tidak ada data siswa yang perlu diperbarui. Semua baris yang tidak berubah (termasuk kapitalisasi huruf) telah disembunyikan.</span>
-                  </td>
-                </tr>
-              \`;
+              previewTbody.innerHTML = 
+                '<tr>' +
+                  '<td colspan="7" class="text-center text-muted py-4">' +
+                    '<i class="bi bi-shield-check text-success fs-3 d-block mb-2"></i>' +
+                    '<strong>Seluruh data pada Excel cocok & sama persis dengan database!</strong><br/>' +
+                    '<span class="small">Tidak ada data siswa yang perlu diperbarui. Semua baris yang tidak berubah (termasuk kapitalisasi huruf) telah disembunyikan.</span>' +
+                  '</td>' +
+                '</tr>';
             }
 
           } else {
-            previewThead.innerHTML = \`
-              <tr>
-                <th style="width: 50px;">No</th>
-                <th style="width: 70px;" class="text-center">Aksi</th>
-                <th>Status Validasi</th>
-                <th>NIPD</th>
-                <th>NISN</th>
-                <th>NIK</th>
-                <th>Nama Lengkap</th>
-                <th>Kelas</th>
-                <th>Tempat Lahir</th>
-                <th>Tanggal Lahir</th>
-                <th>Nama Ayah</th>
-                <th>Nama Ibu</th>
-              </tr>
-            \`;
+            previewThead.innerHTML = 
+              '<tr>' +
+                '<th style="width: 50px;">No</th>' +
+                '<th style="width: 70px;" class="text-center">Aksi</th>' +
+                '<th>Status Validasi</th>' +
+                '<th>NIPD</th>' +
+                '<th>NISN</th>' +
+                '<th>NIK</th>' +
+                '<th>Nama Lengkap</th>' +
+                '<th>Kelas</th>' +
+                '<th>JK</th>' +
+                '<th>Agama</th>' +
+                '<th>Tgl Masuk</th>' +
+                '<th>Tempat Lahir</th>' +
+                '<th>Tanggal Lahir</th>' +
+                '<th>Nama Ayah</th>' +
+                '<th>Nama Ibu</th>' +
+              '</tr>';
 
             rows.forEach((r, idx) => {
               let statusBadge = '<span class="badge bg-secondary bg-opacity-10 text-secondary border rounded-pill">Belum Divalidasi</span>';
@@ -610,43 +714,44 @@ export function renderImportPage(userRole: Role): string {
                 if (v.status === 'new') {
                   statusBadge = '<span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 rounded-pill"><i class="bi bi-person-plus-fill me-1"></i> Data Baru</span>';
                 } else if (v.status === 'update') {
-                  statusBadge = \`<span class="badge bg-warning bg-opacity-10 text-dark border border-warning rounded-pill" title="\${v.changes.join(', ')}"><i class="bi bi-pencil-fill me-1"></i> Ada Perubahan (\${v.changes.length})</span>\`;
+                  statusBadge = '<span class="badge bg-warning bg-opacity-10 text-dark border border-warning rounded-pill" title="' + v.changes.join(', ') + '"><i class="bi bi-pencil-fill me-1"></i> Ada Perubahan (' + v.changes.length + ')</span>';
                 }
               }
 
               displayedCount++;
               const tr = document.createElement('tr');
-              tr.innerHTML = \`
-                <td class="text-secondary fw-semibold">\${displayedCount}</td>
-                <td class="text-center">
-                  <button type="button" class="btn btn-sm btn-outline-warning rounded-pill px-2 py-0 btn-edit-row" data-idx="\${idx}" title="Edit Baris Ini">
-                    <i class="bi bi-pencil-square"></i>
-                  </button>
-                </td>
-                <td>\${statusBadge}</td>
-                <td><code>\${r.nipd || '-'}</code></td>
-                <td><code>\${r.nisn || '-'}</code></td>
-                <td><code>\${r.nik || '-'}</code></td>
-                <td class="fw-bold text-dark">\${r.name}</td>
-                <td><span class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25 rounded-pill">\${r.class_name || '-'}</span></td>
-                <td>\${r.birth_place || '-'}</td>
-                <td>\${r.birth_date || '-'}</td>
-                <td>\${r.father_name || '-'}</td>
-                <td>\${r.mother_name || '-'}</td>
-              \`;
+              tr.innerHTML = 
+                '<td class="text-secondary fw-semibold">' + displayedCount + '</td>' +
+                '<td class="text-center">' +
+                  '<button type="button" class="btn btn-sm btn-outline-warning rounded-pill px-2 py-0 btn-edit-row" data-idx="' + idx + '" title="Edit Baris Ini">' +
+                    '<i class="bi bi-pencil-square"></i>' +
+                  '</button>' +
+                '</td>' +
+                '<td>' + statusBadge + '</td>' +
+                '<td><code>' + (r.nipd || '-') + '</code></td>' +
+                '<td><code>' + (r.nisn || '-') + '</code></td>' +
+                '<td><code>' + (r.nik || '-') + '</code></td>' +
+                '<td class="fw-bold text-dark">' + r.name + '</td>' +
+                '<td><span class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25 rounded-pill">' + (r.class_name || '-') + '</span></td>' +
+                '<td>' + (r.gender || '-') + '</td>' +
+                '<td>' + (r.religion || '-') + '</td>' +
+                '<td>' + (r.entry_date || '-') + '</td>' +
+                '<td>' + (r.birth_place || '-') + '</td>' +
+                '<td>' + (r.birth_date || '-') + '</td>' +
+                '<td>' + (r.father_name || '-') + '</td>' +
+                '<td>' + (r.mother_name || '-') + '</td>';
               previewTbody.appendChild(tr);
             });
 
             if (validatedItems && displayedCount === 0) {
-              previewTbody.innerHTML = \`
-                <tr>
-                  <td colspan="12" class="text-center text-muted py-4">
-                    <i class="bi bi-shield-check text-success fs-3 d-block mb-2"></i>
-                    <strong>Seluruh data siswa di Excel sudah terdaftar dan lengkap di database!</strong><br/>
-                    <span class="small">Tidak ada siswa baru maupun perubahan data. Data yang tidak mengalami perubahan disembunyikan otomatis.</span>
-                  </td>
-                </tr>
-              \`;
+              previewTbody.innerHTML = 
+                '<tr>' +
+                  '<td colspan="15" class="text-center text-muted py-4">' +
+                    '<i class="bi bi-shield-check text-success fs-3 d-block mb-2"></i>' +
+                    '<strong>Seluruh data siswa di Excel sudah terdaftar dan lengkap di database!</strong><br/>' +
+                    '<span class="small">Tidak ada siswa baru maupun perubahan data. Data yang tidak mengalami perubahan disembunyikan otomatis.</span>' +
+                  '</td>' +
+                '</tr>';
             }
           }
 
@@ -678,6 +783,9 @@ export function renderImportPage(userRole: Role): string {
               document.getElementById('edit_row_nipd').value = r.nipd || '';
               document.getElementById('edit_row_nisn').value = r.nisn || '';
               document.getElementById('edit_row_nik').value = r.nik || '';
+              document.getElementById('edit_row_gender').value = r.gender || '';
+              document.getElementById('edit_row_religion').value = r.religion || '';
+              document.getElementById('edit_row_entry_date').value = r.entry_date || '';
               document.getElementById('edit_row_birth_place').value = r.birth_place || '';
               document.getElementById('edit_row_birth_date').value = r.birth_date || '';
               document.getElementById('edit_row_father_name').value = r.father_name || '';
@@ -712,6 +820,9 @@ export function renderImportPage(userRole: Role): string {
           parsedRows[idx].nipd = cleanVal(document.getElementById('edit_row_nipd').value);
           parsedRows[idx].nisn = cleanVal(document.getElementById('edit_row_nisn').value);
           parsedRows[idx].nik = cleanVal(document.getElementById('edit_row_nik').value);
+          parsedRows[idx].gender = cleanVal(document.getElementById('edit_row_gender').value);
+          parsedRows[idx].religion = cleanVal(document.getElementById('edit_row_religion').value);
+          parsedRows[idx].entry_date = cleanVal(document.getElementById('edit_row_entry_date').value);
           parsedRows[idx].birth_place = cleanVal(document.getElementById('edit_row_birth_place').value);
           parsedRows[idx].birth_date = cleanVal(document.getElementById('edit_row_birth_date').value);
           parsedRows[idx].father_name = cleanVal(document.getElementById('edit_row_father_name').value);
@@ -753,7 +864,7 @@ export function renderImportPage(userRole: Role): string {
             btnValidate.innerHTML = '<i class="bi bi-shield-check fs-5 me-1"></i> 1. Validasi Data';
 
             if (!res.ok || !data.success) {
-              alertArea.innerHTML = \`<div class="alert alert-danger rounded-4">Validasi gagal: \${data.message || 'Error'}</div>\`;
+              alertArea.innerHTML = '<div class="alert alert-danger rounded-4">Validasi gagal: ' + (data.message || 'Error') + '</div>';
               return;
             }
 
@@ -769,39 +880,38 @@ export function renderImportPage(userRole: Role): string {
                 lblValidationStatus.textContent = 'Status: Validasi Sukses';
                 lblValidationStatus.className = 'badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 px-3 py-1 rounded-pill small fw-semibold';
 
-                alertArea.innerHTML = \`
-                  <div class="alert alert-success alert-dismissible fade show rounded-4 shadow-sm border-0 mb-4" style="background: linear-gradient(135deg, #10b98115 0%, #05966908 100%); border-left: 5px solid #10b981 !important;">
-                    <div class="d-flex align-items-center gap-3">
-                      <i class="bi bi-check-circle-fill text-success fs-2"></i>
-                      <div>
-                        <h6 class="fw-bold text-dark mb-1">Validasi Selesai! Hanya Menampilkan Baris Berubah.</h6>
-                        <p class="mb-0 small text-secondary">
-                          Ditemukan <strong class="text-success">\${countFound} ID Siswa yang Mengalami Perubahan Data</strong>. 
-                          \${countNotFound > 0 ? \`(\${countNotFound} baris tanpa perubahan disembunyikan otomatis).\` : ''}
-                          Silakan klik <strong>"2. Kirim ke Database"</strong> untuk mengeksekusi update.
-                        </p>
-                      </div>
-                    </div>
-                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                  </div>
-                \`;
+                let notFoundText = countNotFound > 0 ? '(' + countNotFound + ' baris tanpa perubahan disembunyikan otomatis).' : '';
+                alertArea.innerHTML = 
+                  '<div class="alert alert-success alert-dismissible fade show rounded-4 shadow-sm border-0 mb-4" style="background: linear-gradient(135deg, #10b98115 0%, #05966908 100%); border-left: 5px solid #10b981 !important;">' +
+                    '<div class="d-flex align-items-center gap-3">' +
+                      '<i class="bi bi-check-circle-fill text-success fs-2"></i>' +
+                      '<div>' +
+                        '<h6 class="fw-bold text-dark mb-1">Validasi Selesai! Hanya Menampilkan Baris Berubah.</h6>' +
+                        '<p class="mb-0 small text-secondary">' +
+                          'Ditemukan <strong class="text-success">' + countFound + ' ID Siswa yang Mengalami Perubahan Data</strong>. ' +
+                          notFoundText +
+                          ' Silakan klik <strong>"2. Kirim ke Database"</strong> untuk mengeksekusi update.' +
+                        '</p>' +
+                      '</div>' +
+                    '</div>' +
+                    '<button type="button" class="btn-close" data-bs-dismiss="alert"></button>' +
+                  '</div>';
               } else {
                 btnSubmit.disabled = true;
                 lblValidationStatus.textContent = 'Status: Tidak Ada Perubahan';
                 lblValidationStatus.className = 'badge bg-secondary bg-opacity-10 text-secondary border px-3 py-1 rounded-pill small fw-semibold';
 
-                alertArea.innerHTML = \`
-                  <div class="alert alert-warning alert-dismissible fade show rounded-4 shadow-sm border-0 mb-4" style="border-left: 5px solid #f59e0b !important;">
-                    <div class="d-flex align-items-center gap-3">
-                      <i class="bi bi-info-circle-fill text-warning fs-2"></i>
-                      <div>
-                        <h6 class="fw-bold text-dark mb-1">Tidak Ada Data yang Perlu Di-Update!</h6>
-                        <p class="mb-0 small text-secondary">Seluruh ID Siswa di file ini sudah sama persis dengan database. Tabel disembunyikan.</p>
-                      </div>
-                    </div>
-                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                  </div>
-                \`;
+                alertArea.innerHTML = 
+                  '<div class="alert alert-warning alert-dismissible fade show rounded-4 shadow-sm border-0 mb-4" style="border-left: 5px solid #f59e0b !important;">' +
+                    '<div class="d-flex align-items-center gap-3">' +
+                      '<i class="bi bi-info-circle-fill text-warning fs-2"></i>' +
+                      '<div>' +
+                        '<h6 class="fw-bold text-dark mb-1">Tidak Ada Data yang Perlu Di-Update!</h6>' +
+                        '<p class="mb-0 small text-secondary">Seluruh ID Siswa di file ini sudah sama persis dengan database. Tabel disembunyikan.</p>' +
+                      '</div>' +
+                    '</div>' +
+                    '<button type="button" class="btn-close" data-bs-dismiss="alert"></button>' +
+                  '</div>';
               }
 
             } else {
@@ -811,41 +921,40 @@ export function renderImportPage(userRole: Role): string {
                 lblValidationStatus.textContent = 'Status: Validasi Sukses (Siap Dikirim)';
                 lblValidationStatus.className = 'badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 px-3 py-1 rounded-pill small fw-semibold';
 
-                alertArea.innerHTML = \`
-                  <div class="alert alert-success alert-dismissible fade show rounded-4 shadow-sm border-0 mb-4" style="background: linear-gradient(135deg, #10b98115 0%, #05966908 100%); border-left: 5px solid #10b981 !important;">
-                    <div class="d-flex align-items-center gap-3">
-                      <i class="bi bi-check-circle-fill text-success fs-2"></i>
-                      <div>
-                        <h6 class="fw-bold text-dark mb-1">Validasi Berhasil! Hanya Menampilkan Data Baru/Perubahan.</h6>
-                        <p class="mb-0 small text-secondary">
-                          Ditemukan <strong class="text-success">\${countNew} Siswa Baru</strong> dan <strong class="text-warning text-dark">\${countUpdate} Data Perubahan</strong>. 
-                          \${countSkip > 0 ? \`(\${countSkip} baris data yang sudah lengkap/sama disembunyikan).\` : ''}
-                          Silakan klik <strong>"2. Kirim ke Database"</strong> untuk menyimpan.
-                        </p>
-                      </div>
-                    </div>
-                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                  </div>
-                \`;
+                let skipText = countSkip > 0 ? '(' + countSkip + ' baris data yang sudah lengkap/sama disembunyikan).' : '';
+                alertArea.innerHTML = 
+                  '<div class="alert alert-success alert-dismissible fade show rounded-4 shadow-sm border-0 mb-4" style="background: linear-gradient(135deg, #10b98115 0%, #05966908 100%); border-left: 5px solid #10b981 !important;">' +
+                    '<div class="d-flex align-items-center gap-3">' +
+                      '<i class="bi bi-check-circle-fill text-success fs-2"></i>' +
+                      '<div>' +
+                        '<h6 class="fw-bold text-dark mb-1">Validasi Berhasil! Hanya Menampilkan Data Baru/Perubahan.</h6>' +
+                        '<p class="mb-0 small text-secondary">' +
+                          'Ditemukan <strong class="text-success">' + countNew + ' Siswa Baru</strong> dan <strong class="text-warning text-dark">' + countUpdate + ' Data Perubahan</strong>. ' +
+                          skipText +
+                          ' Silakan klik <strong>"2. Kirim ke Database"</strong> untuk menyimpan.' +
+                        '</p>' +
+                      '</div>' +
+                    '</div>' +
+                    '<button type="button" class="btn-close" data-bs-dismiss="alert"></button>' +
+                  '</div>';
               } else {
                 btnSubmit.disabled = true;
                 lblValidationStatus.textContent = 'Status: Tidak Ada Perubahan';
                 lblValidationStatus.className = 'badge bg-secondary bg-opacity-10 text-secondary border px-3 py-1 rounded-pill small fw-semibold';
 
-                alertArea.innerHTML = \`
-                  <div class="alert alert-warning alert-dismissible fade show rounded-4 shadow-sm border-0 mb-4" style="border-left: 5px solid #f59e0b !important;">
-                    <div class="d-flex align-items-center gap-3">
-                      <i class="bi bi-exclamation-triangle-fill text-warning fs-2"></i>
-                      <div>
-                        <h6 class="fw-bold text-dark mb-1">Hasil Validasi: Tidak Ada Data Baru atau Perubahan!</h6>
-                        <p class="mb-0 small text-secondary">
-                          Seluruh <strong>\${parsedRows.length} data siswa</strong> di file Excel ini sudah ada di database dan datanya sudah lengkap.
-                        </p>
-                      </div>
-                    </div>
-                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                  </div>
-                \`;
+                alertArea.innerHTML = 
+                  '<div class="alert alert-warning alert-dismissible fade show rounded-4 shadow-sm border-0 mb-4" style="border-left: 5px solid #f59e0b !important;">' +
+                    '<div class="d-flex align-items-center gap-3">' +
+                      '<i class="bi bi-exclamation-triangle-fill text-warning fs-2"></i>' +
+                      '<div>' +
+                        '<h6 class="fw-bold text-dark mb-1">Hasil Validasi: Tidak Ada Data Baru atau Perubahan!</h6>' +
+                        '<p class="mb-0 small text-secondary">' +
+                          'Seluruh <strong>' + parsedRows.length + ' data siswa</strong> di file Excel ini sudah ada di database dan datanya sudah lengkap.' +
+                        '</p>' +
+                      '</div>' +
+                    '</div>' +
+                    '<button type="button" class="btn-close" data-bs-dismiss="alert"></button>' +
+                  '</div>';
               }
             }
 
@@ -893,7 +1002,7 @@ export function renderImportPage(userRole: Role): string {
             btnSubmit.innerHTML = '<i class="bi bi-send-fill fs-5 me-1"></i> 2. Kirim ke Database';
 
             if (!res.ok || !data.success) {
-              alertArea.innerHTML = \`<div class="alert alert-danger rounded-4">Gagal menyimpan ke database: \${data.message || 'Error'}</div>\`;
+              alertArea.innerHTML = '<div class="alert alert-danger rounded-4">Gagal menyimpan ke database: ' + (data.message || 'Error') + '</div>';
               btnSubmit.disabled = false;
               return;
             }
